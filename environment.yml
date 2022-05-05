@@ -1,0 +1,8 @@
+name: elevator
+channels:
+  - https://conda.anaconda.org/gurobi
+  - defaults
+dependencies:
+  - pytorch
+  - matplotlib
+prefix: /Users/fabio/opt/anaconda3/envs/elevator
