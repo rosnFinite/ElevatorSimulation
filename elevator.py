@@ -1,5 +1,8 @@
+from floor import Floor
+
+
 class Elevator:
-    def __init__(self, environment, starting_floor: int, floor_list: list, num_of_passengers: int = 5):
+    def __init__(self, environment, starting_floor: int, floor_list: list[Floor], num_of_passengers: int = 5):
         self.__environment = environment
         self.current_floor = starting_floor
         self.__num_of_passengers = num_of_passengers

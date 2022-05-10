@@ -1,8 +1,8 @@
 import simpy
 import numpy.random as rnd
 import matplotlib.pyplot as plt
-from Floor import Floor
-from Elevator import Elevator
+from floor import Floor
+from elevator import Elevator
 
 
 class Skyscraper:
