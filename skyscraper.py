@@ -1,4 +1,5 @@
 import simpy
+import config
 import numpy.random as rnd
 import matplotlib.pyplot as plt
 from floor import Floor
@@ -20,11 +21,11 @@ class Skyscraper:
     -------
     """
 
-    def __init__(self, num_of_floors: int = 15, num_of_elevators: int = 3):
-        self.__environment = simpy.rt.RealtimeEnvironment(factor=0.1, strict=False)
+    def __init__(self):
+        self.__environment = simpy.rt.RealtimeEnvironment(factor=config.SIMULATION_SPEED, strict=False)
         self.__passenger_list = [0]
-        self.__num_of_floors = num_of_floors
-        self.__num_of_elevators = num_of_elevators
+        self.__num_of_floors = config.NUM_OF_FLOORS
+        self.__num_of_elevators = config.NUM_OF_ELEVATORS
         self.__environment.process(self.__passenger_spawner())
 
         self.floor_list = [Floor(self.__environment, floor_number=x)
@@ -51,5 +52,5 @@ class Skyscraper:
         plt.show()
 
 
-sky = Skyscraper(num_of_floors=15, num_of_elevators=3)
+sky = Skyscraper()
 sky.start_simulation()

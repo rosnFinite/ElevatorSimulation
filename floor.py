@@ -1,5 +1,5 @@
 import simpy
-
+import config
 
 class Floor:
     def __init__(self, environment, floor_number: int):
@@ -11,7 +11,7 @@ class Floor:
             self.__queue_up = simpy.Store(environment)
             self.__queue_down = None
         # only create a queue for "down" if it is the top floor
-        elif floor_number == 14:
+        elif floor_number == config.NUM_OF_FLOORS-1:
             self.__queue_up = None
             self.__queue_down = simpy.Store(environment)
         else:
