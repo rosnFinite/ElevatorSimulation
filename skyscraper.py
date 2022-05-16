@@ -14,7 +14,7 @@ class Skyscraper:
         self.__num_of_elevators = config.NUM_OF_ELEVATORS
         self.__environment.process(self.__passenger_spawner())
         self.__passenger_id = 0
-        self.log = {"waiting_up": [], "waiting_down": []}
+        self.__log = {"waiting_up": [], "waiting_down": []}
 
         # Create list of available floors (index:0 = ground floor, index:1 = 1. floor, ...)
         self.__floor_list = [Floor(self.__environment, floor_number=x)
@@ -34,7 +34,7 @@ class Skyscraper:
                 f'{self.__environment.now:.2f} Passenger created: '
                 f'Route[{passenger.starting_floor} -> {passenger.destination_floor}]')
             self.update_log_waiting()
-            print(self.log)
+            print(self.__log)
             self.__passenger_list.append(self.__environment.now)
             self.__passenger_id += 1
 
@@ -50,21 +50,10 @@ class Skyscraper:
         """
         Update log of currently waiting passengers for "UP" and "DOWN" for every floor
         """
-        waiting_up_per_floor = [x.waiting_up() for x in self.__floor_list]
-        waiting_down_per_floor = [x.waiting_down() for x in self.__floor_list]
-        self.log["waiting_up"] = waiting_up_per_floor
-        self.log["waiting_down"] = waiting_down_per_floor
-
-    """
-    def start_simulation(self, until: int = 1000):
-        passengers = []
-        while self.__environment.peek() < until:
-            print(f'{self.__passenger_list[-1]:.2f} neuer Passagier ist erschienen')
-            passengers.append(self.__passenger_list[-1])
-            self.__environment.step()
-        plt.plot(passengers)
-        plt.show()
-    """
+        waiting_up_per_floor = [x.num_waiting_up() for x in self.__floor_list]
+        waiting_down_per_floor = [x.num_waiting_down() for x in self.__floor_list]
+        self.__log["waiting_up"] = waiting_up_per_floor
+        self.__log["waiting_down"] = waiting_down_per_floor
 
 
 sky = Skyscraper()
