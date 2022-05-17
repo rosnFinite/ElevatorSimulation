@@ -30,14 +30,20 @@ class Skyscraper:
         # Creates a controller for all available elevator
         self.__elevator_controller = ElevatorController(self.__environment,
                                                         floor_list=self.__floor_list,
-                                                        elevators=self.__elevator_list)
+                                                        elevator_list=self.__elevator_list)
 
     @property
     def num_transported_passengers(self):
+        """
+        Returns the total amount of transported passengers
+        """
         return len(self.__time_waited_log)
 
     @property
     def num_generated_passengers(self):
+        """
+        Returns the total amount of generated passengers
+        """
         return len(self.__passenger_list)
 
     def __passenger_spawner(self):
@@ -62,11 +68,9 @@ class Skyscraper:
             yield self.__environment.timeout(4)
             self.__log.append(self.__get_waiting_passengers())
 
-    def __get_waiting_passengers(self):
+    def __get_waiting_passengers(self) -> dict[str, int]:
         """
         Returns the amount of passengers per floor currently waiting to use the elevator
-
-        :return Dict[str, int]:
         """
         tmp_log = {"waiting_up": [], "waiting_down":[]}
         waiting_up_per_floor = [x.num_waiting_up() for x in self.__floor_list]
@@ -75,20 +79,15 @@ class Skyscraper:
         tmp_log["waiting_down"] = waiting_down_per_floor
         return tmp_log
 
-    def run_simulation(self, time):
+    def run_simulation(self, time: int):
         """
         Run the simulation until the given time is reached
-
-        :param int time: stopping time of the simulation
         """
         self.__environment.run(until=time)
 
-    def plot_waiting(self, floor):
+    def plot_waiting(self, floor: int):
         """
         Plots the amount of waiting passengers for the selected floor over time
-
-        :param int floor: Floor between 0 and 14
-        :return:
         """
         waiting = []
         for value in self.__log:
@@ -96,10 +95,9 @@ class Skyscraper:
         plt.plot(waiting)
         plt.show()
 
-    def get_avg_waiting_time(self):
+    def get_avg_waiting_time(self) -> str:
         """
-        Returns the average seconds a passenger had to wait to reach his destination floor
-        :return float: average waiting time (minutes)
+        Returns the average waiting time of the passengers (HH:MM:SS)
         """
         time_s = sum(self.__time_waited_log) / len(self.__time_waited_log)
         return datetime.timedelta(seconds=time_s).__str__()

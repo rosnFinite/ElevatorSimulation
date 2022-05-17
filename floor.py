@@ -1,8 +1,11 @@
 import simpy
 import config
+from simpy import Environment
+from requests import UsageRequest
+
 
 class Floor:
-    def __init__(self, environment, floor_number: int):
+    def __init__(self, environment: Environment, floor_number: int):
         # floor which is represented by this object
         self.floor_number = floor_number
         # Queues representing waiting passengers on this floor
@@ -22,8 +25,6 @@ class Floor:
         """
         Returns the amount of people currently waiting for the elevator to
         reach a higher floor
-
-        :return int: amount of people waiting in "up" queue
         """
         if self.queue_up is None:
             return 0
@@ -33,31 +34,23 @@ class Floor:
         """
         Returns the amount of people currently waiting for the elevator to
         reach a lower floor
-
-        :return int:
         """
         if self.queue_down is None:
             return 0
         return len(self.queue_down.items)
 
-    def request_up(self, usage_request):
+    def request_up(self, usage_request: UsageRequest):
         """
         Requests elevator to go "up".
         Enters the current "up" queue
-
-        :param UsageRequest usage_request:
-        :return:
         """
         if self.queue_up is not None:
             self.queue_up.put(usage_request)
 
-    def request_down(self, usage_request):
+    def request_down(self, usage_request: UsageRequest):
         """
         Requests elevator to go "down".
         Enters the current "down" queue
-
-        :param UsageRequest usage_request:
-        :return:
         """
         if self.queue_down is not None:
             self.queue_down.put(usage_request)

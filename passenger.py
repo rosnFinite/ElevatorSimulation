@@ -1,18 +1,17 @@
 import numpy as np
+from simpy import Environment
+from typing import List
 import config
+from elevator import Elevator
+from floor import Floor
 from requests import UsageRequest, FloorRequest
 
 
 class Passenger:
-    def __init__(self, passenger_id, environment, floor_list, elevator_list, time_waited_log):
-        """
-        :param environment:
-        :type: simpy.core.Environment
-        :param floor_list:
-        :type: list[Floor]
-        :param passenger_id:
-        :type: int
-        """
+    def __init__(self, passenger_id: int,
+                 environment: Environment,
+                 floor_list: List[Floor],
+                 elevator_list: List[Elevator], time_waited_log: List[float]):
         self.__passenger_id = passenger_id
         self.__environment = environment
         self.__elevator_list = elevator_list
@@ -33,20 +32,24 @@ class Passenger:
 
     @property
     def destination_floor(self) -> int:
+        """
+        Get the destination floor of the passenger instance
+        """
         return self.__destination_floor
 
-    def __generate_start_and_destination(self):
+    def __generate_start_and_destination(self) -> np.ndarray:
         """
-        Generates starting(current) floor and destination floor
-        Gurantees that
-            - start != destination
-            - 0 <= start/destination < NUM_OF_FLOORS
-
-        :return numpy.ndarray[int]:
+        Generates starting(current)floor and destination floor.
+        Guarantees that
+        - start != destination
+        - 0 <= start/destination < NUM_OF_FLOORS
         """
         return np.random.choice(config.NUM_OF_FLOORS, 2, replace=False)
 
-    def __generate_destination(self):
+    def __generate_destination(self) -> int:
+        """
+        Generates a destination floor for the passenger
+        """
         return np.random.choice(range(1, config.NUM_OF_FLOORS))
 
     def use_elevator(self):
@@ -54,8 +57,6 @@ class Passenger:
         Request Elevator to reach destination floor from current floor.
         Enters queue_up of current floor if current_floor < destination_floor
         otherwise queue_down
-
-        :return:
         """
         start_time = self.__environment.now
         request_flag = self.__environment.event()
