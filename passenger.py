@@ -1,8 +1,9 @@
 import numpy as np
+import config
 from simpy import Environment
 from typing import List
-import config
 from elevator import Elevator
+from util import print_verbose, print_silent
 from floor import Floor
 from requests import UsageRequest, FloorRequest
 
@@ -58,6 +59,10 @@ class Passenger:
         Enters queue_up of current floor if current_floor < destination_floor
         otherwise queue_down
         """
+        if config.VERBOSE:
+            log = print_verbose
+        else:
+            log = print_silent
         start_time = self.__environment.now
         request_flag = self.__environment.event()
         usage_request = UsageRequest(request_flag, self.__passenger_id)
@@ -71,14 +76,14 @@ class Passenger:
             yield self.__floor_list[current_floor].queue_down.put(usage_request)
 
         elevator_id = yield request_flag
-        print(f'{elevator_id} accepted transportation request')
+        log(f'{elevator_id} accepted transportation request')
 
         floor_flag = self.__environment.event()
         floor_request = FloorRequest(floor_flag, destination_floor)
         yield self.__elevator_list[elevator_id].passenger_requests.put(floor_request)
         yield floor_flag
         self.__time_waited = (self.__environment.now - start_time) * 10
-        print(f'Zieletage erreicht, insgesamt gewartet: {self.__time_waited:.2f} Sekunden')
+        log(f'Zieletage erreicht, insgesamt gewartet: {self.__time_waited:.2f} Sekunden')
         self.__time_waited_log.append(self.__time_waited)
 
 

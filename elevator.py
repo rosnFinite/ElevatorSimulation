@@ -1,6 +1,7 @@
-import config
 import simpy
+import config
 from typing import List
+from util import print_verbose, print_silent
 from floor import Floor
 
 
@@ -17,12 +18,16 @@ class Elevator:
     def accept_passengers(self) -> bool:
         # print(self.__floor_list[self.current_floor].num_waiting_up())
         # as long as there is enough room, accept passengers
+        if config.VERBOSE:
+            log = print_verbose
+        else:
+            log = print_silent
         accepted = False
-        print(f'Aufzug ID: {self.id}')
-        print(f'Etage: {self.current_floor}')
-        print(f'Richtung: {self.__direction}')
-        print(f'Wartend hoch: {self.__floor_list[self.current_floor].num_waiting_up()}')
-        print(f'Wartend runter: {self.__floor_list[self.current_floor].num_waiting_down()}')
+        log(f'Aufzug ID: {self.id}')
+        log(f'Etage: {self.current_floor}')
+        log(f'Richtung: {self.__direction}')
+        log(f'Wartend hoch: {self.__floor_list[self.current_floor].num_waiting_up()}')
+        log(f'Wartend runter: {self.__floor_list[self.current_floor].num_waiting_down()}')
 
         waiting_up = self.__floor_list[self.current_floor].num_waiting_up()
         waiting_down = self.__floor_list[self.current_floor].num_waiting_down()
@@ -33,7 +38,7 @@ class Elevator:
                 request = yield self.__floor_list[self.current_floor].queue_up.get()
                 request.accept_usage_request(self.id)
                 self.__num_of_passengers += 1
-                print(
+                log(
                     f'Fahrgast aufgenommen UP, jetzt wartend: {self.__floor_list[self.current_floor].num_waiting_up()}')
                 waiting_up = self.__floor_list[self.current_floor].num_waiting_up()
 
@@ -43,10 +48,10 @@ class Elevator:
                 request = yield self.__floor_list[self.current_floor].queue_down.get()
                 request.accept_usage_request(self.id)
                 self.__num_of_passengers += 1
-                print(
+                log(
                     f'Fahrgast aufgenommen DOWN, jetzt wartend: {self.__floor_list[self.current_floor].num_waiting_down()}')
                 waiting_down = self.__floor_list[self.current_floor].num_waiting_down()
-        print(f'Fahrgäste im Aufzug: {self.__num_of_passengers}')
+        log(f'Fahrgäste im Aufzug: {self.__num_of_passengers}')
         return accepted
 
     def release_passengers(self) -> bool:
@@ -55,6 +60,10 @@ class Elevator:
         If destination of a passenger has been reached their transport event is succeeded and they leave the elevator
         """
         # only do something, if passengers are inside the elevator
+        if config.VERBOSE:
+            log = print_verbose
+        else:
+            log = print_silent
         released = False
         if len(self.passenger_requests.items) > 0:
             tmp_q = []
@@ -66,7 +75,7 @@ class Elevator:
                     request.reached_floor()
                     self.__num_of_passengers -= 1
                     released = True
-                    print(f'Fahrgast auf Etage {self.current_floor} herausgelassen. Anzahl Fahrgäste: {self.__num_of_passengers}')
+                    log(f'Fahrgast auf Etage {self.current_floor} herausgelassen. Anzahl Fahrgäste: {self.__num_of_passengers}')
                     continue
                 tmp_q.append(request)
 
@@ -106,6 +115,10 @@ class ElevatorController:
         self.__environment.process(self.__transport())
 
     def __transport(self):
+        if config.VERBOSE:
+            log = print_verbose
+        else:
+            log = print_silent
         while True:
             # default time between floor
             yield self.__environment.timeout(1)
@@ -119,5 +132,5 @@ class ElevatorController:
                     yield self.__environment.timeout(1)
                 # wait extra 2 simulation steps if people moved in or out
                 elevator.next_floor()
-                print("----------------------------------")
-            print("==================================")
+                log("----------------------------------")
+            log("==================================")

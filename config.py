@@ -11,3 +11,5 @@ ELEVATOR_PAYLOAD = 5
 # Factor to control speed of the RT Simulation Environment
 SIMULATION_SPEED = 0.1
 
+VERBOSE = False
+

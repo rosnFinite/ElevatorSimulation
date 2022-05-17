@@ -3,7 +3,6 @@ import config
 import datetime
 import numpy.random as rnd
 import matplotlib.pyplot as plt
-
 from passenger import Passenger
 from floor import Floor
 from elevator import Elevator, ElevatorController
@@ -57,9 +56,6 @@ class Skyscraper:
                                   elevator_list=self.__elevator_list,
                                   time_waited_log=self.__time_waited_log,
                                   passenger_id=passenger_id)
-            print(
-                f'{self.__environment.now:.2f} Passenger created: '
-                f'Route[{passenger.starting_floor} -> {passenger.destination_floor}]')
             self.__passenger_list.append(self.__environment.now)
             passenger_id += 1
 
