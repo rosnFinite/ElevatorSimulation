@@ -1,13 +1,11 @@
 import numpy as np
 import config
-from floor import Floor
-from usage_request import UsageRequest
+from requests import UsageRequest, FloorRequest
 
 
 class Passenger:
-    def __init__(self, environment, floor_list, passenger_id):
+    def __init__(self, environment, floor_list, elevator_list, passenger_id):
         """
-
         :param environment:
         :type: simpy.core.Environment
         :param floor_list:
@@ -16,6 +14,7 @@ class Passenger:
         :type: int
         """
         self.__environment = environment
+        self.__elevator_list = elevator_list
         self.__floor_list = floor_list
         self.__passenger_id = passenger_id
         self.__starting_floor, self.__destination_floor = self.__generate_start_and_destination()
@@ -27,8 +26,7 @@ class Passenger:
         """
         Get starting floor of the passenger
 
-        :return: starting floor of the passenger
-        :type: int
+        :return int: starting floor of the passenger
         """
         return self.__starting_floor
 
@@ -36,15 +34,14 @@ class Passenger:
     def destination_floor(self) -> int:
         return self.__destination_floor
 
-    def __generate_start_and_destination(self) -> np.ndarray:
+    def __generate_start_and_destination(self):
         """
         Generates starting(current) floor and destination floor
         Gurantees that
             - start != destination
             - 0 <= start/destination < NUM_OF_FLOORS
 
-        :return:
-        :type: numpy.ndarray[int]
+        :return numpy.ndarray[int]:
         """
         return np.random.choice(config.NUM_OF_FLOORS, 2, replace=False)
 
@@ -56,6 +53,8 @@ class Passenger:
 
         :return:
         """
+
+        startTime = self.__environment.now
         request_flag = self.__environment.event()
         usage_request = UsageRequest(request_flag, self.__passenger_id)
 
@@ -66,4 +65,15 @@ class Passenger:
             yield self.__floor_list[current_floor].queue_up.put(usage_request)
         else:
             yield self.__floor_list[current_floor].queue_down.put(usage_request)
+
+        elevator_id = yield request_flag
+        print(f'{elevator_id} accepted transportation request')
+
+        floor_flag = self.__environment.event()
+        floor_request = FloorRequest(floor_flag, destination_floor)
+        yield self.__elevator_list[elevator_id].passenger_requests.put(floor_request)
+        yield floor_flag
+
+
+
 

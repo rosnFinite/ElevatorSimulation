@@ -26,7 +26,7 @@ class Floor:
         :return int: amount of people waiting in "up" queue
         """
         if self.queue_up is None:
-            return -1
+            return 0
         return len(self.queue_up.items)
 
     def num_waiting_down(self) -> int:
@@ -37,7 +37,7 @@ class Floor:
         :return int:
         """
         if self.queue_down is None:
-            return -1
+            return 0
         return len(self.queue_down.items)
 
     def request_up(self, usage_request):
