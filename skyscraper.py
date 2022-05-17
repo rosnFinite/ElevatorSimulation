@@ -1,5 +1,6 @@
 import simpy
 import config
+import datetime
 import numpy.random as rnd
 import matplotlib.pyplot as plt
 
@@ -11,19 +12,19 @@ from elevator import Elevator, ElevatorController
 class Skyscraper:
     def __init__(self):
         self.__environment = simpy.Environment()
-        self.__passenger_list = [0]
+        self.__passenger_list = []
         self.__num_of_floors = config.NUM_OF_FLOORS
         self.__num_of_elevators = config.NUM_OF_ELEVATORS
         self.__environment.process(self.__passenger_spawner())
         self.__environment.process(self.__floor_observer())
-        self.__passenger_id = 0
+        self.__time_waited_log = []
         self.__log = []
 
         # Create list of available floors (index:0 = ground floor, index:1 = 1. floor, ...)
         self.__floor_list = [Floor(self.__environment, floor_number=x)
                              for x in range(self.__num_of_floors)]
         self.__elevator_list = [Elevator(x, self.__environment,
-                                         starting_floor=x + (14 // self.__num_of_elevators),
+                                         starting_floor=x * 7,
                                          floor_list=self.__floor_list)
                                 for x in range(self.__num_of_elevators)]
         # Creates a controller for all available elevator
@@ -31,19 +32,30 @@ class Skyscraper:
                                                         floor_list=self.__floor_list,
                                                         elevators=self.__elevator_list)
 
+    @property
+    def num_transported_passengers(self):
+        return len(self.__time_waited_log)
+
+    @property
+    def num_generated_passengers(self):
+        return len(self.__passenger_list)
+
     def __passenger_spawner(self):
+        passenger_id = 0
         while True:
-            waiting_time = rnd.exponential(10)
+            waiting_time = rnd.exponential(5)
             yield self.__environment.timeout(waiting_time)
 
-            passenger = Passenger(self.__environment, self.__floor_list, self.__elevator_list, self.__passenger_id)
-            """
+            passenger = Passenger(environment=self.__environment,
+                                  floor_list=self.__floor_list,
+                                  elevator_list=self.__elevator_list,
+                                  time_waited_log=self.__time_waited_log,
+                                  passenger_id=passenger_id)
             print(
                 f'{self.__environment.now:.2f} Passenger created: '
                 f'Route[{passenger.starting_floor} -> {passenger.destination_floor}]')
-            """
             self.__passenger_list.append(self.__environment.now)
-            self.__passenger_id += 1
+            passenger_id += 1
 
     def __floor_observer(self):
         while True:
@@ -84,11 +96,26 @@ class Skyscraper:
         plt.plot(waiting)
         plt.show()
 
+    def get_avg_waiting_time(self):
+        """
+        Returns the average seconds a passenger had to wait to reach his destination floor
+        :return float: average waiting time (minutes)
+        """
+        time_s = sum(self.__time_waited_log) / len(self.__time_waited_log)
+        return datetime.timedelta(seconds=time_s).__str__()
+
+
+
+
 
 
 if __name__ == "__main__":
     sky = Skyscraper()
-    sky.run_simulation(5760)
+    # time = 8640  // 1 sim step = 10 sec
+    sky.run_simulation(8640)
     sky.plot_waiting(floor=0)
+    print(f'Anzahl generierter Fahrgäste {sky.num_generated_passengers}')
+    print(f'Anzahl transportierter Fahrgäste: {sky.num_transported_passengers}')
+    print(f'Durchn. Wartezeit: {sky.get_avg_waiting_time()}')
 
 

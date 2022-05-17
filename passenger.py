@@ -4,7 +4,7 @@ from requests import UsageRequest, FloorRequest
 
 
 class Passenger:
-    def __init__(self, environment, floor_list, elevator_list, passenger_id):
+    def __init__(self, passenger_id, environment, floor_list, elevator_list, time_waited_log):
         """
         :param environment:
         :type: simpy.core.Environment
@@ -13,11 +13,12 @@ class Passenger:
         :param passenger_id:
         :type: int
         """
+        self.__passenger_id = passenger_id
         self.__environment = environment
         self.__elevator_list = elevator_list
         self.__floor_list = floor_list
-        self.__passenger_id = passenger_id
-        self.__starting_floor, self.__destination_floor = self.__generate_start_and_destination()
+        self.__time_waited_log = time_waited_log
+        self.__starting_floor, self.__destination_floor = [0, self.__generate_destination()]
         self.__time_waited = 0
         self.__environment.process(self.use_elevator())
 
@@ -45,6 +46,9 @@ class Passenger:
         """
         return np.random.choice(config.NUM_OF_FLOORS, 2, replace=False)
 
+    def __generate_destination(self):
+        return np.random.choice(range(1, config.NUM_OF_FLOORS))
+
     def use_elevator(self):
         """
         Request Elevator to reach destination floor from current floor.
@@ -53,8 +57,7 @@ class Passenger:
 
         :return:
         """
-
-        startTime = self.__environment.now
+        start_time = self.__environment.now
         request_flag = self.__environment.event()
         usage_request = UsageRequest(request_flag, self.__passenger_id)
 
@@ -73,7 +76,9 @@ class Passenger:
         floor_request = FloorRequest(floor_flag, destination_floor)
         yield self.__elevator_list[elevator_id].passenger_requests.put(floor_request)
         yield floor_flag
-
+        self.__time_waited = (self.__environment.now - start_time) * 10
+        print(f'Zieletage erreicht, insgesamt gewartet: {self.__time_waited:.2f} Sekunden')
+        self.__time_waited_log.append(self.__time_waited)
 
 
 
