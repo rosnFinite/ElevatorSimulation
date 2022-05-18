@@ -40,18 +40,10 @@ class Passenger:
 
     @property
     def starting_floor(self) -> int:
-        """
-        Get starting floor of the passenger
-
-        :return int: starting floor of the passenger
-        """
         return self.__starting_floor
 
     @property
     def destination_floor(self) -> int:
-        """
-        Get the destination floor of the passenger instance
-        """
         return self.__destination_floor
 
     def __generate_random_start_and_destination(self) -> np.ndarray:

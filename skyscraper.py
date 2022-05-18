@@ -106,12 +106,6 @@ class Skyscraper:
     def plot_waiting(self, floor: int=None):
         """
         Plots the amount of waiting passengers for the selected floor over time
-
-        waiting = []
-        for value in self.__log:
-            waiting.append(value["waiting_up"][floor])
-        plt.plot(waiting)
-        plt.show()
         """
         fig, (ax1, ax2, ax3) = plt.subplots(3)
         fig.suptitle('Länge Warteschlangen', fontsize=16)
