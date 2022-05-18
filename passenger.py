@@ -12,13 +12,29 @@ class Passenger:
     def __init__(self, passenger_id: int,
                  environment: Environment,
                  floor_list: List[Floor],
-                 elevator_list: List[Elevator], time_waited_log: List[float]):
+                 elevator_list: List[Elevator],
+                 time_waited_log: List[float],
+                 starting_floor: int,
+                 destination_floor: int):
         self.__passenger_id = passenger_id
         self.__environment = environment
         self.__elevator_list = elevator_list
         self.__floor_list = floor_list
         self.__time_waited_log = time_waited_log
-        self.__starting_floor, self.__destination_floor = [0, self.__generate_destination()]
+        # if neither start nor destination is provided
+        if starting_floor is None and destination_floor is None:
+            self.__starting_floor, self.__destination_floor = self.__generate_random_start_and_destination()
+        # if starting floor is provided but no destination
+        elif starting_floor is not None and destination_floor is None:
+            self.__starting_floor, self.__destination_floor = [starting_floor,
+                                                               self.__generate_random_floor(exclude=starting_floor)]
+        # if destination floor is provided but no start
+        elif starting_floor is None and destination_floor is not None:
+            self.__starting_floor, self.__destination_floor = [self.__generate_random_floor(exclude=destination_floor),
+                                                               destination_floor]
+        else:
+            self.__starting_floor = self.starting_floor
+            self.__destination_floor = self.destination_floor
         self.__time_waited = 0
         self.__environment.process(self.use_elevator())
 
@@ -38,7 +54,7 @@ class Passenger:
         """
         return self.__destination_floor
 
-    def __generate_start_and_destination(self) -> np.ndarray:
+    def __generate_random_start_and_destination(self) -> np.ndarray:
         """
         Generates starting(current)floor and destination floor.
         Guarantees that
@@ -47,11 +63,11 @@ class Passenger:
         """
         return np.random.choice(config.NUM_OF_FLOORS, 2, replace=False)
 
-    def __generate_destination(self) -> int:
+    def __generate_random_floor(self, exclude: int) -> int:
         """
-        Generates a destination floor for the passenger
+        Generates a random floor for the passenger, either destination or start
         """
-        return np.random.choice(range(1, config.NUM_OF_FLOORS))
+        return np.random.choice(np.setdiff1d(range(1, 4), exclude))
 
     def use_elevator(self):
         """
