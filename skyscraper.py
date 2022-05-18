@@ -35,14 +35,13 @@ class Skyscraper:
         # Create list of available floors (index:0 = ground floor, index:1 = 1. floor, ...)
         self.__floor_list = [Floor(self.__environment, floor_number=x)
                              for x in range(self.__num_of_floors)]
-        self.__elevator_list = [Elevator(x, self.__environment,
-                                         starting_floor=x * 7,
-                                         floor_list=self.__floor_list)
-                                for x in range(self.__num_of_elevators)]
         # Creates a controller for all available elevator
         self.__elevator_controller = ElevatorController(self.__environment,
-                                                        floor_list=self.__floor_list,
-                                                        elevator_list=self.__elevator_list)
+                                                        floor_list=self.__floor_list)
+        self.__elevator_list = [Elevator(x, self.__environment,
+                                         starting_floor=x * 7,
+                                         controller=self.__elevator_controller)
+                                for x in range(self.__num_of_elevators)]
 
     @property
     def num_transported_passengers(self):
