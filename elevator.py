@@ -18,6 +18,21 @@ class Elevator:
         else:
             self.__direction = 1
 
+        self.__environment.process(self.__transport())
+
+    def __transport(self):
+        if config.VERBOSE:
+            log = print_verbose
+        else:
+            log = print_silent
+        while True:
+            # default time between floor
+            yield from self.release_passengers()
+            yield from self.accept_passengers()
+            # wait extra 2 simulation steps if people moved in or out
+            yield from self.next_floor()
+            log("----------------------------------")
+
     def accept_passengers(self):
         # print(self.__floor_list[self.current_floor].num_waiting_up())
         # as long as there is enough room, accept passengers
@@ -119,8 +134,10 @@ class ElevatorController:
         self.__environment = environment
         self.__floor_list = floor_list
         self.__elevator_list = elevator_list
-        self.__environment.process(self.__transport())
+        # self.__environment.process(self.__transport())
 
+    """
+    Currently disabled => iterative implementation, elevators act after each other instead of asynchronously
     def __transport(self):
         if config.VERBOSE:
             log = print_verbose
@@ -135,3 +152,4 @@ class ElevatorController:
                 yield from elevator.next_floor()
                 log("----------------------------------")
             log("==================================")
+    """

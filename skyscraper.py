@@ -1,10 +1,12 @@
+import itertools
 import simpy
 import config
 import datetime
 import numpy.random as rnd
+import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
-from bokeh.plotting import figure, show
+import plotly.express as px
 from passenger import Passenger
 from floor import Floor
 from elevator import Elevator, ElevatorController
@@ -19,7 +21,7 @@ class Skyscraper:
         self.__environment.process(self.__passenger_spawner())
         self.__environment.process(self.__floor_observer())
         self.__time_waited_log = []
-        self.__log = []
+        self.__log = {"up": [[] for _ in range(config.NUM_OF_FLOORS)], "down": [[] for _ in range(config.NUM_OF_FLOORS)]}
         self.__exp_rate = 100
         # set the random seed to reliably redo a simulation run
         if random_seed is not None:
@@ -53,11 +55,16 @@ class Skyscraper:
 
     def __passenger_spawner(self):
         passenger_id = 0
+        pers = 0
         while True:
             exp_rate, start, destination = self.get_timedependent_params()
             waiting_time = rnd.exponential(exp_rate)
             yield self.__environment.timeout(waiting_time)
 
+            if 2520 <= self.__environment.now < 2880:
+                pers += 1
+            if 2880 < self.__environment.now <= 2890:
+                print(pers)
             passenger = Passenger(environment=self.__environment,
                                   floor_list=self.__floor_list,
                                   elevator_list=self.__elevator_list,
@@ -71,18 +78,15 @@ class Skyscraper:
     def __floor_observer(self):
         while True:
             yield self.__environment.timeout(6)
-            self.__log.append(self.__get_waiting_passengers())
+            self.__log_waiting_passengers()
 
-    def __get_waiting_passengers(self) -> dict[str, int]:
+    def __log_waiting_passengers(self):
         """
         Returns the amount of passengers per floor currently waiting to use the elevator
         """
-        tmp_log = {"waiting_up": [], "waiting_down":[]}
-        waiting_up_per_floor = [x.num_waiting_up() for x in self.__floor_list]
-        waiting_down_per_floor = [x.num_waiting_down() for x in self.__floor_list]
-        tmp_log["waiting_up"] = waiting_up_per_floor
-        tmp_log["waiting_down"] = waiting_down_per_floor
-        return tmp_log
+        for index, floor in enumerate(self.__floor_list):
+            self.__log["up"][index].append(floor.num_waiting_up())
+            self.__log["down"][index].append(floor.num_waiting_down())
 
     def get_timedependent_params(self) -> List[int]:
         now = int(self.__environment.now)
@@ -99,7 +103,7 @@ class Skyscraper:
         """
         self.__environment.run(until=time)
 
-    def plot_waiting(self, floor: int):
+    def plot_waiting(self, floor: int=None):
         """
         Plots the amount of waiting passengers for the selected floor over time
 
@@ -109,12 +113,24 @@ class Skyscraper:
         plt.plot(waiting)
         plt.show()
         """
-        waiting = []
-        for value in self.__log:
-            waiting.append(value["waiting_up"][floor])
-        p = figure(title=f'Wartende Fahrgäste Etage {floor}', x_axis_label='x', y_axis_label='y')
-        p.line([x for x in range(len(waiting))], waiting, legend_label="Anzahl wartender Personen", line_width=1)
-        show(p)
+        fig, (ax1, ax2, ax3) = plt.subplots(3)
+        fig.suptitle('Länge Warteschlangen', fontsize=16)
+        labels = []
+        for floor in range(config.NUM_OF_FLOORS):
+            ax1.plot(self.__log["up"][floor])
+            ax2.plot(self.__log["down"][floor])
+            labels.append(f'Etage {floor}')
+
+        exp_rates = []
+        r = 1/config.EXP_RATE_CHECKPOINTS[0][0]
+        for x in range(config.SIMULATION_TIME):
+            if x in config.EXP_RATE_CHECKPOINTS:
+                r = 1/config.EXP_RATE_CHECKPOINTS[x][0]
+            exp_rates.append(r)
+        ax3.plot(exp_rates[::4])
+
+        plt.show()
+
 
     def get_avg_waiting_time(self) -> str:
         """
@@ -125,7 +141,7 @@ class Skyscraper:
 
 
 if __name__ == "__main__":
-    sky = Skyscraper(random_seed=1234567)
+    sky = Skyscraper(random_seed=1)
     # time = 8640  // 1 sim step = 10 sec
     sky.run_simulation(8640)
     sky.plot_waiting(floor=0)
