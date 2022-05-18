@@ -6,4 +6,5 @@ dependencies:
   - matplotlib
   - plotly
   - pandas
+  - bokeh
 prefix: /Users/fabio/opt/anaconda3/envs/elevator
