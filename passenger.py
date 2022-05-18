@@ -14,6 +14,7 @@ class Passenger:
                  floor_list: List[Floor],
                  elevator_list: List[Elevator],
                  time_waited_log: List[float],
+                 route_log: List[List[int]],
                  starting_floor: int,
                  destination_floor: int):
         self.__passenger_id = passenger_id
@@ -21,6 +22,7 @@ class Passenger:
         self.__elevator_list = elevator_list
         self.__floor_list = floor_list
         self.__time_waited_log = time_waited_log
+        self.__route_log = route_log
         # if neither start nor destination is provided
         if starting_floor is None and destination_floor is None:
             self.__starting_floor, self.__destination_floor = self.__generate_random_start_and_destination()
@@ -35,6 +37,7 @@ class Passenger:
         else:
             self.__starting_floor = self.starting_floor
             self.__destination_floor = self.destination_floor
+        self.__route_log.append([self.starting_floor, self.destination_floor])
         self.__time_waited = 0
         self.__environment.process(self.use_elevator())
 

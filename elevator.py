@@ -6,13 +6,16 @@ from floor import Floor
 
 
 class Elevator:
-    def __init__(self, elevator_id: int, environment: simpy.Environment, floor_list: List[Floor], starting_floor: int):
+    def __init__(self, elevator_id: int,
+                 environment: simpy.Environment,
+                 floor_list: List[Floor],
+                 starting_floor: int):
         self.id = elevator_id
         self.__environment = environment
         self.current_floor = starting_floor
         self.__floor_list = floor_list
         self.passenger_requests = simpy.Store(environment, capacity=config.ELEVATOR_PAYLOAD)
-        self.__num_of_passengers = 0
+        self.num_of_passengers = 0
         if self.current_floor == config.NUM_OF_FLOORS-1:
             self.__direction = -1
         else:
@@ -52,24 +55,24 @@ class Elevator:
 
         if self.__direction == 1 and waiting_up > 0:
             accepted = True
-            while self.__num_of_passengers < config.ELEVATOR_PAYLOAD and waiting_up > 0:
+            while self.num_of_passengers < config.ELEVATOR_PAYLOAD and waiting_up > 0:
                 request = yield self.__floor_list[self.current_floor].queue_up.get()
                 request.accept_usage_request(self.id)
-                self.__num_of_passengers += 1
+                self.num_of_passengers += 1
                 log(
                     f'Fahrgast aufgenommen UP, jetzt wartend: {self.__floor_list[self.current_floor].num_waiting_up()}')
                 waiting_up = self.__floor_list[self.current_floor].num_waiting_up()
 
         if self.__direction == -1 and waiting_down > 0:
             accepted = True
-            while self.__num_of_passengers < config.ELEVATOR_PAYLOAD and waiting_down > 0:
+            while self.num_of_passengers < config.ELEVATOR_PAYLOAD and waiting_down > 0:
                 request = yield self.__floor_list[self.current_floor].queue_down.get()
                 request.accept_usage_request(self.id)
-                self.__num_of_passengers += 1
+                self.num_of_passengers += 1
                 log(
                     f'Fahrgast aufgenommen DOWN, jetzt wartend: {self.__floor_list[self.current_floor].num_waiting_down()}')
                 waiting_down = self.__floor_list[self.current_floor].num_waiting_down()
-        log(f'Fahrgäste im Aufzug: {self.__num_of_passengers}')
+        log(f'Fahrgäste im Aufzug: {self.num_of_passengers}')
         if accepted:
             yield self.__environment.timeout(1)
 
@@ -92,9 +95,9 @@ class Elevator:
                 # release passenger if he is on his desired floor
                 if request.destination_floor == self.current_floor:
                     request.reached_floor()
-                    self.__num_of_passengers -= 1
+                    self.num_of_passengers -= 1
                     released = True
-                    log(f'Fahrgast auf Etage {self.current_floor} herausgelassen. Anzahl Fahrgäste: {self.__num_of_passengers}')
+                    log(f'Fahrgast auf Etage {self.current_floor} herausgelassen. Anzahl Fahrgäste: {self.num_of_passengers}')
                     continue
                 tmp_q.append(request)
 
