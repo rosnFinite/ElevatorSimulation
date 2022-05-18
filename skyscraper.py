@@ -48,7 +48,7 @@ class Skyscraper:
     def __passenger_spawner(self):
         passenger_id = 0
         while True:
-            waiting_time = rnd.exponential(5)
+            waiting_time = rnd.exponential(10)
             yield self.__environment.timeout(waiting_time)
 
             passenger = Passenger(environment=self.__environment,

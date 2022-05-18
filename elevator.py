@@ -15,7 +15,7 @@ class Elevator:
         self.__num_of_passengers = 0
         self.__direction = 1
 
-    def accept_passengers(self) -> bool:
+    def accept_passengers(self):
         # print(self.__floor_list[self.current_floor].num_waiting_up())
         # as long as there is enough room, accept passengers
         if config.VERBOSE:
@@ -52,9 +52,10 @@ class Elevator:
                     f'Fahrgast aufgenommen DOWN, jetzt wartend: {self.__floor_list[self.current_floor].num_waiting_down()}')
                 waiting_down = self.__floor_list[self.current_floor].num_waiting_down()
         log(f'Fahrgäste im Aufzug: {self.__num_of_passengers}')
-        return accepted
+        if accepted:
+            yield self.__environment.timeout(1)
 
-    def release_passengers(self) -> bool:
+    def release_passengers(self):
         """
         Checks if any of the passengers inside the elevator have reached their destination.
         If destination of a passenger has been reached their transport event is succeeded and they leave the elevator
@@ -82,7 +83,8 @@ class Elevator:
             # re-add passengers still inside the elevator to passenger_requests
             for passenger in tmp_q:
                 self.passenger_requests.put(passenger)
-        return released
+        if released:
+            yield self.__environment.timeout(1)
 
     def next_floor(self):
         """
@@ -92,6 +94,7 @@ class Elevator:
             self.current_floor += 1
         if self.__direction == -1:
             self.current_floor -= 1
+        yield self.__environment.timeout(1)
 
     def check_direction_change(self):
         """
@@ -121,16 +124,11 @@ class ElevatorController:
             log = print_silent
         while True:
             # default time between floor
-            yield self.__environment.timeout(1)
             for elevator in self.__elevator_list:
                 elevator.check_direction_change()
-                released = yield from elevator.release_passengers()
-                if released:
-                    yield self.__environment.timeout(1)
-                accepted = yield from elevator.accept_passengers()
-                if accepted:
-                    yield self.__environment.timeout(1)
+                yield from elevator.release_passengers()
+                yield from elevator.accept_passengers()
                 # wait extra 2 simulation steps if people moved in or out
-                elevator.next_floor()
+                yield from elevator.next_floor()
                 log("----------------------------------")
             log("==================================")
