@@ -13,7 +13,10 @@ class Elevator:
         self.__floor_list = floor_list
         self.passenger_requests = simpy.Store(environment, capacity=config.ELEVATOR_PAYLOAD)
         self.__num_of_passengers = 0
-        self.__direction = 1
+        if self.current_floor == config.NUM_OF_FLOORS-1:
+            self.__direction = -1
+        else:
+            self.__direction = 1
 
     def accept_passengers(self):
         # print(self.__floor_list[self.current_floor].num_waiting_up())
@@ -94,6 +97,7 @@ class Elevator:
             self.current_floor += 1
         if self.__direction == -1:
             self.current_floor -= 1
+        self.check_direction_change()
         yield self.__environment.timeout(1)
 
     def check_direction_change(self):
@@ -125,7 +129,6 @@ class ElevatorController:
         while True:
             # default time between floor
             for elevator in self.__elevator_list:
-                elevator.check_direction_change()
                 yield from elevator.release_passengers()
                 yield from elevator.accept_passengers()
                 # wait extra 2 simulation steps if people moved in or out
