@@ -1,13 +1,9 @@
-import itertools
 import simpy
 import config
 import datetime
 import numpy.random as rnd
-import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
-from matplotlib.widgets import RangeSlider
-import plotly.express as px
 from passenger import Passenger
 from floor import Floor
 from elevator import Elevator, ElevatorController
@@ -20,10 +16,11 @@ class Skyscraper:
         self.__num_of_floors = config.NUM_OF_FLOORS
         self.__num_of_elevators = config.NUM_OF_ELEVATORS
         self.__environment.process(self.__passenger_spawner())
-        self.__environment.process(self.__floor_observer())
+        self.__environment.process(self.__observer())
         self.__elevator_position_log = [[] for _ in range(config.NUM_OF_FLOORS)]
         self.__elevator_utilization_log = [[] for _ in range(config.NUM_OF_ELEVATORS)]
-        self.__time_waited_log = []
+        self.__total_time_log = []
+        self.__transportation_time_log = []
         self.__passenger_route_log = []
         self.__log = {"up": [[] for _ in range(config.NUM_OF_FLOORS)],
                       "down": [[] for _ in range(config.NUM_OF_FLOORS)]}
@@ -48,7 +45,7 @@ class Skyscraper:
         """
         Returns the total amount of transported passengers
         """
-        return len(self.__time_waited_log)
+        return len(self.__total_time_log)
 
     @property
     def num_generated_passengers(self):
@@ -61,13 +58,14 @@ class Skyscraper:
         passenger_id = 0
         pers = 0
         while True:
-            exp_rate, start, destination = self.get_timedependent_params()
+            exp_rate, start, destination = self.get_time_dependent_params()
             waiting_time = rnd.exponential(exp_rate)
             yield self.__environment.timeout(waiting_time)
             passenger = Passenger(environment=self.__environment,
                                   floor_list=self.__floor_list,
                                   elevator_list=self.__elevator_list,
-                                  time_waited_log=self.__time_waited_log,
+                                  time_waited_log=self.__total_time_log,
+                                  transportation_time_log=self.__transportation_time_log,
                                   route_log=self.__passenger_route_log,
                                   starting_floor=start,
                                   destination_floor=destination,
@@ -75,7 +73,7 @@ class Skyscraper:
             self.__passenger_list.append(self.__environment.now)
             passenger_id += 1
 
-    def __floor_observer(self):
+    def __observer(self):
         while True:
             yield self.__environment.timeout(6)
             self.__log_elevator_position()
@@ -92,13 +90,13 @@ class Skyscraper:
 
     def __log_waiting_passengers(self):
         """
-        Returns the amount of passengers per floor currently waiting to use the elevator
+        Returns the amount of passengers currently waiting to use the elevator (per floor)
         """
         for index, floor in enumerate(self.__floor_list):
             self.__log["up"][index].append(floor.num_waiting_up())
             self.__log["down"][index].append(floor.num_waiting_down())
 
-    def get_timedependent_params(self) -> List[int]:
+    def get_time_dependent_params(self) -> List[int]:
         now = int(self.__environment.now)
         possible_exp = config.EXP_RATE_CHECKPOINTS[0]
         for checkpoint in config.EXP_RATE_CHECKPOINTS:
@@ -113,10 +111,7 @@ class Skyscraper:
         """
         self.__environment.run(until=time)
 
-    def plot_waiting(self, floor: int = None):
-        """
-        Plots the amount of waiting passengers for the selected floor over time
-        """
+    def plot_data(self):
         fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
         fig.set_size_inches(10, 7)
         fig.suptitle('Länge der Warteschlangen', fontsize=16)
@@ -176,20 +171,30 @@ class Skyscraper:
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=None, wspace=None, hspace=0.4)
         plt.show()
 
+    def get_avg_total_time(self) -> float:
+        """
+        Returns the average time a passenger needed to reach their destination(HH:MM:SS)
+        """
+        return sum(self.__total_time_log) / len(self.__total_time_log)
 
-    def get_avg_waiting_time(self) -> str:
+    def get_avg_transportation_time(self) -> float:
         """
-        Returns the average waiting time of the passengers (HH:MM:SS)
+        Returns the average time a passenger used the elevator
         """
-        time_s = sum(self.__time_waited_log) / len(self.__time_waited_log)
-        return datetime.timedelta(seconds=time_s).__str__()
+        return sum(self.__transportation_time_log) / len(self.__transportation_time_log)
 
 
 if __name__ == "__main__":
     sky = Skyscraper(random_seed=1234)
     # time = 8640  // 1 sim step = 10 sec
     sky.run_simulation(8640)
-    sky.plot_waiting(floor=0)
-    print(f'Anzahl generierter Fahrgäste {sky.num_generated_passengers}')
-    print(f'Anzahl transportierter Fahrgäste: {sky.num_transported_passengers}')
-    print(f'Durchn. Wartezeit: {sky.get_avg_waiting_time()}')
+    sky.plot_data()
+    avg_total = sky.get_avg_total_time()
+    avg_transport = sky.get_avg_transportation_time()
+    print('========================================')
+    print(f'Anzahl getätigter Anfragen {sky.num_generated_passengers}')
+    print(f'Anzahl erfüllter Anfragen: {sky.num_transported_passengers}')
+    print(f'Durchn. Zeit zum Ziel: {datetime.timedelta(seconds=avg_total)}')
+    print(f'Durchn. Zeit gefahren: {datetime.timedelta(seconds=avg_transport)}')
+    print(f'Durchn. Zeit gewartet: {datetime.timedelta(seconds=avg_total - avg_transport)}')
+    print('========================================')
