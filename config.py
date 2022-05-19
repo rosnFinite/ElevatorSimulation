@@ -3,13 +3,13 @@ This files provides globally usable configurations
 for the simulations.
 """
 
-# Top Level configurations
-SKYSCRAPER_CAPACITY = 500
+
 SECONDS_PER_STEP = 10
 SIMULATION_TIME = int(24*60*(60/SECONDS_PER_STEP))
 NUM_OF_FLOORS = 15
 NUM_OF_ELEVATORS = 3
 ELEVATOR_PAYLOAD = 5
+
 # Checkpoints to change exp rate and default start and destination floor
 EXP_RATE_CHECKPOINTS = {0: [100, None, None],       # scale=100, start=random, destination=random (from 00:00)
                         2520: [2, 0, None],         # scale=4, start=0, destination=random        (from 7:00)
