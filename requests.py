@@ -1,7 +1,6 @@
 class UsageRequest:
-    def __init__(self, event, user):
+    def __init__(self, event):
         self.__completion_event = event
-        self.userId = user
 
     def accept_usage_request(self, elevator_id):
         self.__completion_event.succeed(value=elevator_id)
