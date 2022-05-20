@@ -2,12 +2,13 @@ name: elevator
 channels:
   - defaults
 dependencies:
+  - python=3.7
   - pytorch
   - matplotlib
   - plotly
   - pandas
-  - dash
   - pip
   - pip:
       - simpy
+      - flask
 prefix: /Users/fabio/opt/anaconda3/envs/elevator
