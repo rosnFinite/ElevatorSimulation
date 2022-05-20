@@ -38,19 +38,3 @@ class Floor:
         if self.queue_down is None:
             return 0
         return len(self.queue_down.items)
-
-    def request_up(self, usage_request: UsageRequest):
-        """
-        Requests elevator to go "up".
-        Enters the current "up" queue
-        """
-        if self.queue_up is not None:
-            self.queue_up.put(usage_request)
-
-    def request_down(self, usage_request: UsageRequest):
-        """
-        Requests elevator to go "down".
-        Enters the current "down" queue
-        """
-        if self.queue_down is not None:
-            self.queue_down.put(usage_request)
