@@ -1,5 +1,5 @@
 """
-This files provides globally usable configurations
+This files provides usable configurations
 for the simulations.
 """
 
