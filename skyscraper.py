@@ -2,6 +2,7 @@ import simpy
 import config
 import datetime
 import numpy.random as rnd
+import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
 from passenger import Passenger
@@ -185,7 +186,7 @@ class Skyscraper:
 
 
 if __name__ == "__main__":
-    sky = Skyscraper(random_seed=1234)
+    sky = Skyscraper(random_seed=12345)
     # time = 8640  // 1 sim step = 10 sec
     sky.run_simulation(8640)
     sky.plot_data()

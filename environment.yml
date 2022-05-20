@@ -6,5 +6,8 @@ dependencies:
   - matplotlib
   - plotly
   - pandas
+  - pip
   - bokeh
+  - pip:
+      - simpy
 prefix: /Users/fabio/opt/anaconda3/envs/elevator
