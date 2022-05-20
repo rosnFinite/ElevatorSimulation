@@ -21,9 +21,9 @@ jobs:
     - name: Install dependencies
       run: |
         conda env update --file environment.yml --name elevator
-    - name: Lint with flake8
+    - name: Static analysis
       run: |
-        conda install prospector
+        conda install -c conda-forge prospector
         conda install flake8
         prospector
         # stop the build if there are Python syntax errors or undefined names
