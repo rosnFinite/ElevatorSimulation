@@ -1,11 +1,12 @@
 import numpy as np
-import config
 from simpy import Environment
 from typing import List
-from elevator import Elevator
-from util import print_verbose, print_silent
-from floor import Floor
-from requests import UsageRequest, FloorRequest
+
+from simulation import config
+from simulation.elevator import Elevator
+from simulation.util import print_verbose, print_silent
+from simulation.floor import Floor
+from simulation.requests import UsageRequest, FloorRequest
 
 
 def generate_random_start_and_destination() -> np.ndarray:

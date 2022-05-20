@@ -1,13 +1,13 @@
 import simpy
-import config
 import datetime
 import numpy.random as rnd
-import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
-from passenger import Passenger
-from floor import Floor
-from elevator import Elevator, ElevatorController
+
+from simulation import config
+from simulation.passenger import Passenger
+from simulation.floor import Floor
+from simulation.elevator import Elevator, ElevatorController
 
 
 class Skyscraper:

@@ -1,7 +1,7 @@
 import simpy
-import config
 from simpy import Environment
-from requests import UsageRequest
+
+from simulation import config
 
 
 class Floor:

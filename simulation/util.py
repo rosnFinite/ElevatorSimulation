@@ -1,4 +1,3 @@
-
 def print_verbose(arg):
     print(arg)
 

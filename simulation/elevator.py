@@ -1,8 +1,9 @@
 import simpy
-import config
 from typing import List
-from util import print_verbose, print_silent
-from floor import Floor
+
+from simulation.util import print_verbose, print_silent
+from simulation import config
+from simulation.floor import Floor
 
 
 class Elevator:
