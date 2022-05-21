@@ -8,7 +8,9 @@ dependencies:
   - plotly
   - pandas
   - pip
+  - dash
+  - dash-mantine-components
   - pip:
       - simpy
-      - flask
+      - dash-iconify
 prefix: /Users/fabio/opt/anaconda3/envs/elevator

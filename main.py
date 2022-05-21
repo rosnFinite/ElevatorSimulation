@@ -1,4 +1,5 @@
-from backend.app import start_backend
+from simulation.skyscraper import Skyscraper
 
-start_backend()
-
+sky = Skyscraper()
+sky.run_simulation(time=8640)
+print(sky.statistics())
