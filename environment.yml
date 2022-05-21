@@ -9,7 +9,7 @@ dependencies:
   - pandas
   - pip
   - dash
-  - dash-mantine-components
+  - conda-forge::dash-mantine-components
   - pip:
       - simpy
       - dash-iconify
