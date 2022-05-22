@@ -33,6 +33,7 @@ class Passenger:
                  elevator_list: List[Elevator],
                  time_waited_log: List[float],
                  transportation_time_log: List[float],
+                 queue_time_log: List[float],
                  route_log: List[List[int]],
                  starting_floor: int,
                  destination_floor: int):
@@ -42,6 +43,7 @@ class Passenger:
         self.__floor_list = floor_list
         self.__total_time_waited_log = time_waited_log
         self.__transportation_time_log = transportation_time_log
+        self.__queue_time_log = queue_time_log
         self.__route_log = route_log
         # if neither start nor destination is provided
         if starting_floor is None and destination_floor is None:
@@ -75,6 +77,7 @@ class Passenger:
         usage_request = UsageRequest(request_flag)
 
         # Enter the correct queue corresponding to start and destination
+        start_queue_time = self.__environment.now
         current_floor = self.__starting_floor
         destination_floor = self.__destination_floor
         if current_floor < destination_floor:
@@ -83,6 +86,7 @@ class Passenger:
             yield self.__floor_list[current_floor].queue_down.put(usage_request)
 
         elevator_id = yield request_flag
+        end_queue_time = self.__environment.now
         self.debug_log(f'{elevator_id} accepted transportation request')
 
         # Request the elevator to hold at your destination
@@ -98,6 +102,7 @@ class Passenger:
         self.debug_log(f'Zieletage erreicht, insgesamt gewartet: {total_time_waited:.2f} Sekunden \n'
                        f'davon im Aufzug: {transportation_time:.2f}')
         self.__total_time_waited_log.append(total_time_waited)
+        self.__queue_time_log.append((end_queue_time- start_queue_time) * config.SECONDS_PER_STEP)
         self.__transportation_time_log.append(transportation_time)
 
 

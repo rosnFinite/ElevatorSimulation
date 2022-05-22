@@ -1,6 +1,7 @@
 import simpy
 import datetime
 import numpy.random as rnd
+import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
 
@@ -21,6 +22,7 @@ class Skyscraper:
         self.__elevator_position_log = [[] for _ in range(config.NUM_OF_FLOORS)]
         self.__elevator_utilization_log = [[] for _ in range(config.NUM_OF_ELEVATORS)]
         self.__total_time_log = []
+        self.__queue_time_log = []
         self.__transportation_time_log = []
         self.__passenger_route_log = []
         self.__log = {"up": [[] for _ in range(config.NUM_OF_FLOORS)],
@@ -55,6 +57,56 @@ class Skyscraper:
         """
         return len(self.__passenger_list)
 
+    @property
+    def mean_queue_time(self):
+        """
+        Returns the average time to wait for an elevator
+        """
+        return np.mean(self.__queue_time_log)
+
+    @property
+    def median_queue_time(self):
+        """
+        Returns the median time to wait for an elevator
+        """
+        return np.median(self.__queue_time_log)
+
+    @property
+    def std_queue_time(self):
+        """
+        Returns the standard deviation on every logged queue time
+        """
+        return np.std(self.__queue_time_log)
+
+    @property
+    def mean_travel_time(self):
+        """
+        Returns the average time to reach destination after entering the elevator
+        """
+        return np.mean(self.__transportation_time_log)
+
+    @property
+    def median_travel_time(self):
+        """
+        Returns the median travel time
+        """
+        return np.median(self.__transportation_time_log)
+
+    @property
+    def std_travel_time(self):
+        """
+        Returns the standard deviation on every logged travel time
+        """
+        return np.std(self.__transportation_time_log)
+
+    @property
+    def get_queue_up_log(self):
+        return [self.__log["up"][x] for x in range(config.NUM_OF_FLOORS)]
+
+    @property
+    def get_queue_down_log(self):
+        return [self.__log["down"][x] for x in range(config.NUM_OF_FLOORS)]
+
     def __passenger_spawner(self):
         passenger_id = 0
         pers = 0
@@ -67,6 +119,7 @@ class Skyscraper:
                                   elevator_list=self.__elevator_list,
                                   time_waited_log=self.__total_time_log,
                                   transportation_time_log=self.__transportation_time_log,
+                                  queue_time_log=self.__queue_time_log,
                                   route_log=self.__passenger_route_log,
                                   starting_floor=start,
                                   destination_floor=destination,

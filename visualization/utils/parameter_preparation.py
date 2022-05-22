@@ -20,7 +20,7 @@ def create_behaviour_json(seconds_per_step: int, spawn_behaviour: str, floor_beh
         for index, spawnrate in enumerate(default_spawnrates):
             spawnrate_checkpoints[int(default_time[index] * 60 * (60 / seconds_per_step))] = [spawnrate]
     if spawn_behaviour == "random":
-        random_spawnrates = np.random.randint(2, 30, size=9)
+        random_spawnrates = np.random.randint(2, 20, size=9)
         random_time = [0, 3, 6, 9, 12, 15, 18, 21, 23]
         for index, spawnrate in enumerate(random_spawnrates):
             spawnrate_checkpoints[int(random_time[index] * 60 * (60 / seconds_per_step))] = [int(spawnrate)]
