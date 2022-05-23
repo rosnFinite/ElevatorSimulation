@@ -1,11 +1,9 @@
 import numpy as np
 from simpy import Environment
-from typing import List
 
+# import for intern files
 from simulation import config
-from simulation.elevator import Elevator
 from simulation.util import print_verbose, print_silent
-from simulation.floor import Floor
 from simulation.requests import UsageRequest, FloorRequest
 
 
@@ -29,37 +27,27 @@ def generate_random_floor(exclude: int) -> int:
 class Passenger:
     def __init__(self, passenger_id: int,
                  environment: Environment,
-                 floor_list: List[Floor],
-                 elevator_list: List[Elevator],
-                 time_waited_log: List[float],
-                 transportation_time_log: List[float],
-                 queue_time_log: List[float],
-                 route_log: List[List[int]],
+                 skyscraper,
                  starting_floor: int,
                  destination_floor: int):
-        self.__passenger_id = passenger_id
+        self.passenger_id = passenger_id
+        self.skyscraper = skyscraper
         self.__environment = environment
-        self.__elevator_list = elevator_list
-        self.__floor_list = floor_list
-        self.__total_time_waited_log = time_waited_log
-        self.__transportation_time_log = transportation_time_log
-        self.__queue_time_log = queue_time_log
-        self.__route_log = route_log
         # if neither start nor destination is provided
         if starting_floor is None and destination_floor is None:
-            self.__starting_floor, self.__destination_floor = generate_random_start_and_destination()
+            self.starting_floor, self.destination_floor = generate_random_start_and_destination()
         # if starting floor is provided but no destination
         elif starting_floor is not None and destination_floor is None:
-            self.__starting_floor, self.__destination_floor = [starting_floor,
-                                                               generate_random_floor(exclude=starting_floor)]
+            self.starting_floor, self.destination_floor = [starting_floor,
+                                                           generate_random_floor(exclude=starting_floor)]
         # if destination floor is provided but no start
         elif starting_floor is None and destination_floor is not None:
-            self.__starting_floor, self.__destination_floor = [generate_random_floor(exclude=destination_floor),
-                                                               destination_floor]
+            self.starting_floor, self.destination_floor = [generate_random_floor(exclude=destination_floor),
+                                                           destination_floor]
         else:
-            self.__starting_floor = starting_floor
-            self.__destination_floor = destination_floor
-        self.__route_log.append([self.__starting_floor, self.__destination_floor])
+            self.starting_floor = starting_floor
+            self.destination_floor = destination_floor
+        self.skyscraper.passenger_route_log.append([self.starting_floor, self.destination_floor])
         self.debug_log = print_silent
         if config.VERBOSE:
             self.debug_log = print_verbose
@@ -78,12 +66,10 @@ class Passenger:
 
         # Enter the correct queue corresponding to start and destination
         start_queue_time = self.__environment.now
-        current_floor = self.__starting_floor
-        destination_floor = self.__destination_floor
-        if current_floor < destination_floor:
-            yield self.__floor_list[current_floor].queue_up.put(usage_request)
+        if self.starting_floor < self.destination_floor:
+            yield self.skyscraper.floor_list[self.starting_floor].queue_up.put(usage_request)
         else:
-            yield self.__floor_list[current_floor].queue_down.put(usage_request)
+            yield self.skyscraper.floor_list[self.starting_floor].queue_down.put(usage_request)
 
         elevator_id = yield request_flag
         end_queue_time = self.__environment.now
@@ -92,8 +78,8 @@ class Passenger:
         # Request the elevator to hold at your destination
         start_time_transportation = self.__environment.now
         floor_flag = self.__environment.event()
-        floor_request = FloorRequest(floor_flag, destination_floor)
-        yield self.__elevator_list[elevator_id].passenger_requests.put(floor_request)
+        floor_request = FloorRequest(floor_flag, self.destination_floor)
+        yield self.skyscraper.elevator_list[elevator_id].passenger_requests.put(floor_request)
         yield floor_flag
 
         end_time = self.__environment.now
@@ -101,9 +87,9 @@ class Passenger:
         transportation_time = (end_time - start_time_transportation) * config.SECONDS_PER_STEP
         self.debug_log(f'Zieletage erreicht, insgesamt gewartet: {total_time_waited:.2f} Sekunden \n'
                        f'davon im Aufzug: {transportation_time:.2f}')
-        self.__total_time_waited_log.append(total_time_waited)
-        self.__queue_time_log.append((end_queue_time- start_queue_time) * config.SECONDS_PER_STEP)
-        self.__transportation_time_log.append(transportation_time)
+        self.skyscraper.total_time_log.append(total_time_waited)
+        self.skyscraper.queue_time_log.append((end_queue_time- start_queue_time) * config.SECONDS_PER_STEP)
+        self.skyscraper.travel_time_log.append(transportation_time)
 
 
 
