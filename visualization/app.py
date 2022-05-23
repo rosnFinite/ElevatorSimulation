@@ -1,19 +1,22 @@
+import sys
 import dash_mantine_components as dmc
-import pandas as pd
 import datetime
-from components.header import MainHeader
-from utils.parameter_preparation import create_behaviour_json
+from dash import Dash, Output, Input, State
+from dash_iconify import DashIconify
+
+# intern functions
+import plotly.graph_objects as go
 import utils.plotting as plotting
+from utils.parameter_preparation import create_passenger_behaviour
+from components.header import MainHeader
 from components.menu import EnvironmentParameterMenu, PassengerBehaviourMenu
 from components.visuals import PassengerSpawnratePlot
 from components.statistics import TextualStats
-from dash import Dash, Output, Input, State
-from dash_iconify import DashIconify
-import plotly.graph_objects as go
-
 from simulation.skyscraper import Skyscraper
 
-pd.options.plotting.backend = "plotly"
+# this is a pointer to the module object instance itself.
+this = sys.modules[__name__]
+this.passenger_behaviour = None
 
 app = Dash(__name__)
 
@@ -102,6 +105,7 @@ def update_total_sim_steps(seconds_per_step):
     return f'Total simulation steps: {int(1440*(60/seconds_per_step))}'
 
 
+# -----------------------------RUN SIMULATION AND DISPLAY STATS-----------------------------
 @app.callback(
     [
         Output(component_id="text-total-spawned", component_property="children"),
@@ -126,9 +130,9 @@ def update_total_sim_steps(seconds_per_step):
 )
 def get_simulation_data(seconds_per_step, random_seed, n_clicks):
     if random_seed is not None:
-        sky = Skyscraper(random_seed)
+        sky = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
     else:
-        sky = Skyscraper()
+        sky = Skyscraper(passenger_behaviour=this.passenger_behaviour)
     sky.run_simulation(time=int(1440*(60/seconds_per_step)))
     total_spawned = f'#Passengers created: {sky.num_generated_passengers}'
     total_transported = f'#Passengers transported: {sky.num_transported_passengers}'
@@ -148,6 +152,7 @@ def get_simulation_data(seconds_per_step, random_seed, n_clicks):
         fig_down
 
 
+# -----------------------------UPDATE PASSENGER SPAWN RATE PLOT-----------------------------
 @app.callback(
     Output(component_id="spawn-plot", component_property="figure"),
     Input(component_id="passenger-spawn-radiogroup", component_property="value"),
@@ -155,13 +160,13 @@ def get_simulation_data(seconds_per_step, random_seed, n_clicks):
     Input(component_id="input-simulation-steps", component_property="value"),
 )
 def update_spawn_behaviour_visual(spawn_behaviour, floor_behaviour, seconds_per_step):
-    checkpoints = create_behaviour_json(seconds_per_step, spawn_behaviour, floor_behaviour)
+    this.passenger_behaviour = create_passenger_behaviour(seconds_per_step, spawn_behaviour, floor_behaviour)
     sim_steps = int(1440*(60/seconds_per_step))
     exp_rates = []
-    r = 1 / checkpoints[0][0]
+    r = 1 / this.passenger_behaviour[0][0]
     for x in range(sim_steps):
-        if x in checkpoints:
-            r = 1 / checkpoints[x][0]
+        if x in this.passenger_behaviour:
+            r = 1 / this.passenger_behaviour[x][0]
         exp_rates.append(r)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=[x for x in range(sim_steps)], y=exp_rates,
