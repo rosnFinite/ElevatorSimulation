@@ -1,8 +1,7 @@
-import json
 import numpy as np
 
 
-def create_behaviour_json(seconds_per_step: int, spawn_behaviour: str, floor_behaviour: str) -> dict:
+def create_passenger_behaviour(seconds_per_step: int, spawn_behaviour: str, floor_behaviour: str) -> dict:
     default_spawnrates = [100, 2, 3, 3, 8, 3, 3, 2, 100]
     default_start_dest = [(None, None),
                           (0, None),
@@ -40,8 +39,5 @@ def create_behaviour_json(seconds_per_step: int, spawn_behaviour: str, floor_beh
         for index, cp in enumerate(spawnrate_checkpoints):
             spawnrate_checkpoints[cp].append(0)
             spawnrate_checkpoints[cp].append(None)
-
-    with open("passenger_behaviour.json", "w") as outfile:
-        json.dump(spawnrate_checkpoints, outfile, indent=4)
 
     return spawnrate_checkpoints

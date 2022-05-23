@@ -12,7 +12,7 @@ from simulation.elevator import Elevator, ElevatorController
 
 
 class Skyscraper:
-    def __init__(self, random_seed: int = None):
+    def __init__(self, random_seed: int = None, passenger_behaviour: dict = None):
         self.__environment = simpy.Environment()
         self.__environment.process(self.__passenger_spawner())
         self.__environment.process(self.__observer())
@@ -31,6 +31,10 @@ class Skyscraper:
         # set the random seed to reliably redo a simulation run
         if random_seed is not None:
             rnd.seed(random_seed)
+        self.passenger_behaviour = config.PASSENGER_BEHAVIOUR
+        # if custom passenger behaviour is passed, use it
+        if passenger_behaviour is not None:
+            self.passenger_behaviour = passenger_behaviour
 
         # Create list of available floors (index:0 = ground floor, index:1 = 1. floor, ...)
         self.floor_list = [Floor(self.__environment, floor_number=x)
@@ -145,11 +149,11 @@ class Skyscraper:
 
     def __get_time_dependent_params(self) -> List[int]:
         now = int(self.__environment.now)
-        dependent_params = config.EXP_RATE_CHECKPOINTS["0"]
-        for checkpoint in config.EXP_RATE_CHECKPOINTS:
-            if now < int(checkpoint):
+        dependent_params = self.passenger_behaviour[0]
+        for checkpoint in self.passenger_behaviour:
+            if now < checkpoint:
                 break
-            dependent_params = config.EXP_RATE_CHECKPOINTS[checkpoint]
+            dependent_params = self.passenger_behaviour[checkpoint]
         return dependent_params
 
     def run_simulation(self, time: int):
@@ -169,12 +173,10 @@ class Skyscraper:
         ax2.title.set_text("Warteschlange 'RUNTER'")
 
         exp_rates = []
-        r = 1 / int(config.EXP_RATE_CHECKPOINTS["0"][0])
+        r = 1 / self.passenger_behaviour[0][0]
         for x in range(config.SIMULATION_TIME):
-            # cast time to string to use it as dict key
-            x = str(x)
-            if x in config.EXP_RATE_CHECKPOINTS:
-                r = 1 / int(config.EXP_RATE_CHECKPOINTS[x][0])
+            if x in self.passenger_behaviour:
+                r = 1 / self.passenger_behaviour[x][0]
             exp_rates.append(r)
         ax3.plot(exp_rates[::6])
 
