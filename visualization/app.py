@@ -35,16 +35,15 @@ app.layout = dmc.Container(
                         )
                     ],
                     children=[
-                        dmc.Center(
-                            dmc.Group(
-                                direction="row",
-                                children=[
-                                    EnvironmentParameterMenu,
-                                    PassengerBehaviourMenu,
-                                    PassengerSpawnratePlot
-                                ],
-                                style={"marginTop": 20},
-                            ),
+                        dmc.Grid(
+                            children=[
+                                dmc.Col(EnvironmentParameterMenu, span=3),
+                                dmc.Col(PassengerBehaviourMenu, span=3),
+                                dmc.Col(PassengerSpawnratePlot, span=6)
+                            ],
+                            style={"marginTop": 20},
+                            gutter="xs",
+                            grow=True
                         ),
                         dmc.Center(
                             children=[
