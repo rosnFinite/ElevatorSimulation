@@ -1,6 +1,7 @@
 import simpy
 import datetime
 import numpy.random as rnd
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
@@ -16,11 +17,11 @@ class Skyscraper:
         self.__environment = simpy.Environment()
         self.__environment.process(self.__passenger_spawner())
         self.__environment.process(self.__observer())
-        self.passenger_list = []
         self.num_of_floors = config.NUM_OF_FLOORS
         self.num_of_elevators = config.NUM_OF_ELEVATORS
         # --------------------------Simulation logs--------------------------
-        self.elevator_position_log = [[] for _ in range(config.NUM_OF_FLOORS)]
+        self.num_passengers = 0
+        self.elevator_position_log = [[] for _ in range(config.NUM_OF_ELEVATORS)]
         self.elevator_utilization_log = [[] for _ in range(config.NUM_OF_ELEVATORS)]
         self.total_time_log = []
         self.queue_time_log = []
@@ -28,6 +29,8 @@ class Skyscraper:
         self.passenger_route_log = []
         self.queue_usage_log = {"up": [[] for _ in range(config.NUM_OF_FLOORS)],
                                 "down": [[] for _ in range(config.NUM_OF_FLOORS)]}
+        # combined dataframe of position/utilization/q_up/q_down for better usage with plotly
+        self.df_log = None
         # set the random seed to reliably redo a simulation run
         if random_seed is not None:
             rnd.seed(random_seed)
@@ -58,7 +61,7 @@ class Skyscraper:
         """
         Returns the total amount of generated passengers
         """
-        return len(self.passenger_list)
+        return self.num_passengers
 
     @property
     def mean_queue_time(self):
@@ -111,7 +114,6 @@ class Skyscraper:
         return [self.queue_usage_log["down"][x] for x in range(config.NUM_OF_FLOORS)]
 
     def __passenger_spawner(self):
-        passenger_id = 0
         while True:
             exp_rate, start, destination = self.__get_time_dependent_params()
             waiting_time = rnd.exponential(exp_rate)
@@ -120,13 +122,12 @@ class Skyscraper:
                       skyscraper=self,
                       starting_floor=start,
                       destination_floor=destination,
-                      passenger_id=passenger_id)
-            self.passenger_list.append(self.__environment.now)
-            passenger_id += 1
+                      passenger_id=self.num_passengers)
+            self.num_passengers += 1
 
     def __observer(self):
         while True:
-            yield self.__environment.timeout(6)
+            yield self.__environment.timeout(1)
             self.__log_elevator_position()
             self.__log_waiting_passengers()
             self.__log_elevator_utilization()
@@ -156,11 +157,29 @@ class Skyscraper:
             dependent_params = self.passenger_behaviour[checkpoint]
         return dependent_params
 
+    def __create_df_log(self):
+        """
+        Converts the separate logs of position/utilization/q_up/q_down into one single dataframe
+        for better integration with plotly.
+        """
+        prep_q_up = {f'up_{x}': self.get_queue_up_log[x] for x in range(config.NUM_OF_FLOORS)}
+        prep_q_down = {f'down_{x}': self.get_queue_down_log[x] for x in range(config.NUM_OF_FLOORS)}
+        prep_el_pos = dict(e0_pos=self.elevator_position_log[0], e1_pos=self.elevator_position_log[1],
+                           e2_pos=self.elevator_position_log[2])
+        prep_el_util = dict(e0_util=self.elevator_utilization_log[0], e1_util=self.elevator_utilization_log[1],
+                            e2_util=self.elevator_utilization_log[2])
+        df_q_up = pd.DataFrame.from_dict(prep_q_up)
+        df_q_down = pd.DataFrame.from_dict(prep_q_down)
+        df_el_pos = pd.DataFrame.from_dict(prep_el_pos)
+        df_el_util = pd.DataFrame.from_dict(prep_el_util)
+        self.df_log = pd.concat([df_q_up, df_q_down, df_el_pos, df_el_util], axis=1)
+
     def run_simulation(self, time: int):
         """
         Run the simulation until the given time is reached
         """
         self.__environment.run(until=time)
+        self.__create_df_log()
 
     def plot_data(self):
         fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
@@ -178,7 +197,7 @@ class Skyscraper:
             if x in self.passenger_behaviour:
                 r = 1 / self.passenger_behaviour[x][0]
             exp_rates.append(r)
-        ax3.plot(exp_rates[::6])
+        ax3.plot(exp_rates)
 
         plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=None, wspace=None, hspace=0.4)
         plt.show()
