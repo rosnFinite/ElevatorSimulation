@@ -14,6 +14,7 @@ Center
 """
 
 TextualStats = dmc.Center(
+    style={"width": "90vw"},
     children=[
         dmc.Group(
             direction="column",
@@ -68,11 +69,27 @@ TextualStats = dmc.Center(
 
                     ]
                 ),
-                dcc.Graph(
-                    id="queue-up-plot"
+                dmc.Group(
+                    direction="row",
+                    children=[
+                        dcc.Graph(
+                            id="queue-time-dist"
+                        ),
+                        dcc.Graph(
+                            id="elevator-time-dist"
+                        )
+                    ]
                 ),
-                dcc.Graph(
-                    id="queue-down-plot"
+                dmc.Group(
+                    direction="row",
+                    children=[
+                        dcc.Graph(
+                            id="queue-up-plot"
+                        ),
+                        dcc.Graph(
+                            id="queue-down-plot"
+                        )
+                    ]
                 )
             ]
         )
