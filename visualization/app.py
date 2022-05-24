@@ -16,6 +16,7 @@ from simulation.skyscraper import Skyscraper
 
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
+this.skyscraper = None
 this.passenger_behaviour = None
 
 app = Dash(__name__)
@@ -45,8 +46,7 @@ app.layout = dmc.Container(
                                 dmc.Col(PassengerSpawnratePlot, span=6)
                             ],
                             style={"marginTop": 20},
-                            gutter="xs",
-                            grow=True
+                            gutter="xs"
                         ),
                         dmc.Center(
                             children=[
@@ -119,7 +119,9 @@ def update_total_sim_steps(seconds_per_step):
         Output(component_id="text-median-elevator-time", component_property="children"),
         Output(component_id="text-deviation-elevator-time", component_property="children"),
         Output(component_id="queue-up-plot", component_property="figure"),
-        Output(component_id="queue-down-plot", component_property="figure")
+        Output(component_id="queue-down-plot", component_property="figure"),
+        Output(component_id="queue-time-dist", component_property="figure"),
+        Output(component_id="elevator-time-dist", component_property="figure")
     ],
     [
         State(component_id="input-simulation-steps", component_property="value"),
@@ -130,26 +132,28 @@ def update_total_sim_steps(seconds_per_step):
 )
 def get_simulation_data(seconds_per_step, random_seed, n_clicks):
     if random_seed is not None:
-        sky = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
+        this.skyscraper = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
     else:
-        sky = Skyscraper(passenger_behaviour=this.passenger_behaviour)
-    sky.run_simulation(time=int(1440*(60/seconds_per_step)))
-    total_spawned = f'#Passengers created: {sky.num_generated_passengers}'
-    total_transported = f'#Passengers transported: {sky.num_transported_passengers}'
-    total_abandoned = f'#Passengers abandoned: {sky.num_generated_passengers - sky.num_transported_passengers}'
-    percentage_transported = f'Quota: {sky.num_transported_passengers/sky.num_generated_passengers * 100:.2f}%'
-    mean_queue_time = f'Mean: {datetime.timedelta(seconds=sky.mean_queue_time)}'
-    median_queue_time = f'Median: {datetime.timedelta(seconds=sky.median_queue_time)}'
-    std_queue_time = f'Std. Deviation: {datetime.timedelta(seconds=sky.std_queue_time)}'
-    mean_elevator_time = f'Mean: {datetime.timedelta(seconds=sky.mean_travel_time)}'
-    median_elevator_time = f'Median: {datetime.timedelta(seconds=sky.mean_travel_time)}'
-    std_elevator_time = f'Std. Deviation: {datetime.timedelta(seconds=sky.std_travel_time)}'
-    fig_up = plotting.plot_waiting(sky, "up")
-    fig_down = plotting.plot_waiting(sky, "down")
+        this.skyscraper = Skyscraper(passenger_behaviour=this.passenger_behaviour)
+    this.skyscraper.run_simulation(time=int(1440*(60/seconds_per_step)))
+    total_spawned = f'#Passengers created: {this.skyscraper.num_generated_passengers}'
+    total_transported = f'#Passengers transported: {this.skyscraper.num_transported_passengers}'
+    total_abandoned = f'#Passengers abandoned: {this.skyscraper.num_generated_passengers - this.skyscraper.num_transported_passengers}'
+    percentage_transported = f'Quota: {this.skyscraper.num_transported_passengers/this.skyscraper.num_generated_passengers * 100:.2f}%'
+    mean_queue_time = f'Mean: {datetime.timedelta(seconds=this.skyscraper.mean_queue_time)}'
+    median_queue_time = f'Median: {datetime.timedelta(seconds=this.skyscraper.median_queue_time)}'
+    std_queue_time = f'Std. Deviation: {datetime.timedelta(seconds=this.skyscraper.std_queue_time)}'
+    mean_elevator_time = f'Mean: {datetime.timedelta(seconds=this.skyscraper.mean_travel_time)}'
+    median_elevator_time = f'Median: {datetime.timedelta(seconds=this.skyscraper.mean_travel_time)}'
+    std_elevator_time = f'Std. Deviation: {datetime.timedelta(seconds=this.skyscraper.std_travel_time)}'
+    fig_up = plotting.plot_waiting(this.skyscraper, "up")
+    fig_down = plotting.plot_waiting(this.skyscraper, "down")
+    dist_q = plotting.plot_distribution(this.skyscraper.queue_time_log, title="Queue time distribution")
+    dist_el = plotting.plot_distribution(this.skyscraper.travel_time_log, title="Travel time distribution")
 
     return total_spawned, total_transported, total_abandoned, percentage_transported, mean_queue_time, \
         median_queue_time, std_queue_time, mean_elevator_time, median_elevator_time, std_elevator_time, fig_up, \
-        fig_down
+        fig_down, dist_q, dist_el
 
 
 # -----------------------------UPDATE PASSENGER SPAWN RATE PLOT-----------------------------
