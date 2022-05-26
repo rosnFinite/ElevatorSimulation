@@ -1,16 +1,17 @@
 import sys
 import dash_mantine_components as dmc
 import datetime
+import time
 from dash import Dash, Output, Input, State
 from dash_iconify import DashIconify
+import plotly.graph_objects as go
 
 # intern functions
-import plotly.graph_objects as go
 import utils.plotting as plotting
 from utils.parameter_preparation import create_passenger_behaviour
 from components.header import MainHeader
 from components.menu import EnvironmentParameterMenu, PassengerBehaviourMenu
-from components.visuals import PassengerSpawnratePlot
+from components.visuals import PassengerSpawnratePlot, TimeLine
 from components.statistics import TextualStats
 from simulation.skyscraper import Skyscraper
 
@@ -86,7 +87,7 @@ app.layout = dmc.Container(
                         )
                     ],
                     children=[
-
+                        TimeLine
                     ]
                 )
             ]
@@ -102,7 +103,7 @@ app.layout = dmc.Container(
     Input(component_id="input-simulation-steps", component_property="value")
 )
 def update_total_sim_steps(seconds_per_step):
-    return f'Total simulation steps: {int(1440*(60/seconds_per_step))}'
+    return f'Total simulation steps: {int(1440 * (60 / seconds_per_step))}'
 
 
 # -----------------------------RUN SIMULATION AND DISPLAY STATS-----------------------------
@@ -135,11 +136,11 @@ def get_simulation_data(seconds_per_step, random_seed, n_clicks):
         this.skyscraper = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
     else:
         this.skyscraper = Skyscraper(passenger_behaviour=this.passenger_behaviour)
-    this.skyscraper.run_simulation(time=int(1440*(60/seconds_per_step)))
+    this.skyscraper.run_simulation(time=int(1440 * (60 / seconds_per_step)))
     total_spawned = f'#Passengers created: {this.skyscraper.num_generated_passengers}'
     total_transported = f'#Passengers transported: {this.skyscraper.num_transported_passengers}'
     total_abandoned = f'#Passengers abandoned: {this.skyscraper.num_generated_passengers - this.skyscraper.num_transported_passengers}'
-    percentage_transported = f'Quota: {this.skyscraper.num_transported_passengers/this.skyscraper.num_generated_passengers * 100:.2f}%'
+    percentage_transported = f'Quota: {this.skyscraper.num_transported_passengers / this.skyscraper.num_generated_passengers * 100:.2f}%'
     mean_queue_time = f'Mean: {datetime.timedelta(seconds=this.skyscraper.mean_queue_time)}'
     median_queue_time = f'Median: {datetime.timedelta(seconds=this.skyscraper.median_queue_time)}'
     std_queue_time = f'Std. Deviation: {datetime.timedelta(seconds=this.skyscraper.std_queue_time)}'
@@ -152,11 +153,38 @@ def get_simulation_data(seconds_per_step, random_seed, n_clicks):
     dist_el = plotting.plot_distribution(this.skyscraper.travel_time_log, title="Travel time distribution")
 
     return total_spawned, total_transported, total_abandoned, percentage_transported, mean_queue_time, \
-        median_queue_time, std_queue_time, mean_elevator_time, median_elevator_time, std_elevator_time, fig_up, \
-        fig_down, dist_q, dist_el
+           median_queue_time, std_queue_time, mean_elevator_time, median_elevator_time, std_elevator_time, fig_up, \
+           fig_down, dist_q, dist_el
+
+
+# -----------------------------VISUALIZE TIMELINE-----------------------------
+
+
+@app.callback(
+    Output(component_id="drag-value", component_property="children"),
+    Output(component_id="drag-slider", component_property="max"),
+    State(component_id="input-simulation-steps", component_property="value"),
+    Input(component_id="drag-slider", component_property="value")
+)
+def convert_to_datetime(seconds_per_step, slider_value):
+    slider_max = int(1440 * (60 / seconds_per_step)) - 1
+    if this.skyscraper is not None:
+        slider_max = len(this.skyscraper.df_log) - 1
+    displayed_time = time.strftime('%H:%M:%S', time.gmtime(slider_value * seconds_per_step))
+    return f'Time of day:  {displayed_time}', slider_max
+
+
+@app.callback(
+    Output(component_id="visual-plot", component_property="figure"),
+    Input(component_id="drag-slider", component_property="value"),
+    prevent_initial_call=True
+)
+def update_queue_barchart(slider_value):
+    return plotting.plot_barchart(this.skyscraper, slider_value)
 
 
 # -----------------------------UPDATE PASSENGER SPAWN RATE PLOT-----------------------------
+
 @app.callback(
     Output(component_id="spawn-plot", component_property="figure"),
     Input(component_id="passenger-spawn-radiogroup", component_property="value"),
@@ -165,7 +193,7 @@ def get_simulation_data(seconds_per_step, random_seed, n_clicks):
 )
 def update_spawn_behaviour_visual(spawn_behaviour, floor_behaviour, seconds_per_step):
     this.passenger_behaviour = create_passenger_behaviour(seconds_per_step, spawn_behaviour, floor_behaviour)
-    sim_steps = int(1440*(60/seconds_per_step))
+    sim_steps = int(1440 * (60 / seconds_per_step))
     exp_rates = []
     r = 1 / this.passenger_behaviour[0][0]
     for x in range(sim_steps):
@@ -182,4 +210,4 @@ def update_spawn_behaviour_visual(spawn_behaviour, floor_behaviour, seconds_per_
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=False)
