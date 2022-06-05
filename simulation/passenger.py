@@ -82,13 +82,14 @@ class Passenger:
         yield self.skyscraper.elevator_list[elevator_id].passenger_requests.put(floor_request)
         yield floor_flag
 
+        # log the total time to destination, waiting time and transportation time
         end_time = self.__environment.now
         total_time_waited = (end_time - start_time_total) * config.SECONDS_PER_STEP
         transportation_time = (end_time - start_time_transportation) * config.SECONDS_PER_STEP
         self.debug_log(f'Zieletage erreicht, insgesamt gewartet: {total_time_waited:.2f} Sekunden \n'
                        f'davon im Aufzug: {transportation_time:.2f}')
         self.skyscraper.total_time_log.append(total_time_waited)
-        self.skyscraper.queue_time_log.append((end_queue_time- start_queue_time) * config.SECONDS_PER_STEP)
+        self.skyscraper.queue_time_log.append((end_queue_time - start_queue_time) * config.SECONDS_PER_STEP)
         self.skyscraper.travel_time_log.append(transportation_time)
 
 
