@@ -22,20 +22,24 @@ class Floor:
             self.queue_down = Store(environment)
 
     @property
-    def num_waiting_up(self) -> int:
+    def num_waiting_up(self):
         """
         Returns the amount of people currently waiting on this floor for the elevator to
         reach a higher floor
+
+        :return int:
         """
         if self.queue_up is None:
             return 0
         return len(self.queue_up.items)
 
     @property
-    def num_waiting_down(self) -> int:
+    def num_waiting_down(self):
         """
         Returns the amount of people currently waiting on this floor for the elevator to
         reach a lower floor
+
+        :return int:
         """
         if self.queue_down is None:
             return 0
