@@ -1,3 +1,6 @@
+"""
+Dash components for rendering the header
+"""
 import dash_mantine_components as dmc
 from dash import html, dcc
 from dash_iconify import DashIconify

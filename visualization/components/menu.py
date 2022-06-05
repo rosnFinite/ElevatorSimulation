@@ -1,3 +1,6 @@
+"""
+Dash components for handling user input
+"""
 import dash_mantine_components as dmc
 
 EnvironmentParameterMenu = dmc.Paper(
@@ -18,7 +21,7 @@ EnvironmentParameterMenu = dmc.Paper(
                     style={"marginTop": -20},
                     children=[
                         dmc.NumberInput(
-                            id="input-simulation-steps",
+                            id="input-second-per-step",
                             label="Seconds per Simulation Step",
                             value=10,
                             min=5,
