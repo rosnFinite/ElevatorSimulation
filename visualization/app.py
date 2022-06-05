@@ -12,11 +12,13 @@ from utils.parameter_preparation import create_passenger_behaviour
 from components.header import MainHeader
 from components.menu import EnvironmentParameterMenu, PassengerBehaviourMenu
 from components.visuals import PassengerSpawnratePlot, TimeLine
-from components.statistics import TextualStats
+from components.statistics import Statistics
 from simulation.skyscraper import Skyscraper
+
 
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
+# allows to assign variables to it
 this.skyscraper = None
 this.passenger_behaviour = None
 
@@ -75,7 +77,7 @@ app.layout = dmc.Container(
                         )
                     ],
                     children=[
-                        TextualStats
+                        Statistics
                     ]
                 ),
                 dmc.AccordionItem(
@@ -98,16 +100,22 @@ app.layout = dmc.Container(
 )
 
 
-# SimulationParameterMenu
 @app.callback(
-    Output(component_id="input-simulation-steps", component_property="description"),
-    Input(component_id="input-simulation-steps", component_property="value")
+    Output(component_id="input-second-per-step", component_property="description"),
+    Input(component_id="input-second-per-step", component_property="value")
 )
 def update_total_sim_steps(seconds_per_step):
+    """
+    Updates the total amount of simulation steps, displayed over the input for seconds per step
+
+    :param int seconds_per_step:
+    :return:
+    """
     return f'Total simulation steps: {int(1440 * (60 / seconds_per_step))}'
 
 
 # -----------------------------RUN SIMULATION AND DISPLAY STATS-----------------------------
+
 @app.callback(
     [
         Output(component_id="text-total-spawned", component_property="children"),
@@ -126,13 +134,20 @@ def update_total_sim_steps(seconds_per_step):
         Output(component_id="elevator-time-dist", component_property="figure")
     ],
     [
-        State(component_id="input-simulation-steps", component_property="value"),
+        State(component_id="input-second-per-step", component_property="value"),
         State(component_id="input-random-seed", component_property="value")
     ],
     Input("simulation-button", "n_clicks"),
     prevent_initial_call=True
 )
 def get_simulation_data(seconds_per_step, random_seed, n_clicks):
+    """
+    Runs the simulation with the user defined configuration and updates all statistics afterwards
+
+    :param int seconds_per_step:
+    :param int random_seed:
+    :param int n_clicks:
+    """
     if random_seed is not None:
         this.skyscraper = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
     else:
@@ -158,41 +173,23 @@ def get_simulation_data(seconds_per_step, random_seed, n_clicks):
            fig_down, dist_q, dist_el
 
 
-# -----------------------------VISUALIZE TIMELINE-----------------------------
-
-
-@app.callback(
-    Output(component_id="drag-value", component_property="children"),
-    Output(component_id="drag-slider", component_property="max"),
-    State(component_id="input-simulation-steps", component_property="value"),
-    Input(component_id="drag-slider", component_property="value")
-)
-def convert_to_datetime(seconds_per_step, slider_value):
-    slider_max = int(1440 * (60 / seconds_per_step)) - 1
-    if this.skyscraper is not None:
-        slider_max = len(this.skyscraper.df_log) - 1
-    displayed_time = time.strftime('%H:%M:%S', time.gmtime(slider_value * seconds_per_step))
-    return f'Time of day:  {displayed_time}', slider_max
-
-
-@app.callback(
-    Output(component_id="visual-plot", component_property="figure"),
-    Input(component_id="drag-slider", component_property="value"),
-    prevent_initial_call=True
-)
-def update_queue_barchart(slider_value):
-    return plotting.plot_barchart(this.skyscraper, slider_value)
-
-
 # -----------------------------UPDATE PASSENGER SPAWN RATE PLOT-----------------------------
 
 @app.callback(
     Output(component_id="spawn-plot", component_property="figure"),
     Input(component_id="passenger-spawn-radiogroup", component_property="value"),
     Input(component_id="passenger-floor-radiogroup", component_property="value"),
-    Input(component_id="input-simulation-steps", component_property="value"),
+    Input(component_id="input-second-per-step", component_property="value"),
 )
-def update_spawn_behaviour_visual(spawn_behaviour, floor_behaviour, seconds_per_step):
+def update_spawn_behaviour_plot(spawn_behaviour, floor_behaviour, seconds_per_step):
+    """
+    Updates the plot displaying the changing passenger spawnrate over time
+
+    :param str spawn_behaviour:
+    :param str floor_behaviour:
+    :param int seconds_per_step:
+    :return:
+    """
     this.passenger_behaviour = create_passenger_behaviour(seconds_per_step, spawn_behaviour, floor_behaviour)
     sim_steps = int(1440 * (60 / seconds_per_step))
     exp_rates = []
@@ -208,6 +205,42 @@ def update_spawn_behaviour_visual(spawn_behaviour, floor_behaviour, seconds_per_
                       xaxis_title="simulation step",
                       yaxis_title="exponential rate parameter")
     return fig
+
+
+# -----------------------------VISUALIZE TIMELINE-----------------------------
+
+@app.callback(
+    Output(component_id="drag-value", component_property="children"),
+    Output(component_id="drag-slider", component_property="max"),
+    State(component_id="input-second-per-step", component_property="value"),
+    Input(component_id="drag-slider", component_property="value")
+)
+def convert_to_datetime(seconds_per_step, slider_value):
+    """
+    Converts slider value to HH:MM:SS format
+
+    :param int seconds_per_step:
+    :param int slider_value:
+    """
+    slider_max = int(1440 * (60 / seconds_per_step)) - 1
+    if this.skyscraper is not None:
+        slider_max = len(this.skyscraper.df_log) - 1
+    displayed_time = time.strftime('%H:%M:%S', time.gmtime(slider_value * seconds_per_step))
+    return f'Time of day:  {displayed_time}', slider_max
+
+
+@app.callback(
+    Output(component_id="visual-plot", component_property="figure"),
+    Input(component_id="drag-slider", component_property="value"),
+    prevent_initial_call=True
+)
+def update_queue_barchart(slider_value):
+    """
+    Updates the visualization of the overall state of the simulation at the time given by the slider
+
+    :param int slider_value:
+    """
+    return plotting.plot_overall_state(this.skyscraper, slider_value)
 
 
 if __name__ == "__main__":

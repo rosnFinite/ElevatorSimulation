@@ -48,7 +48,7 @@ def plot_distribution(value_list, title):
     return fig
 
 
-def plot_barchart(simulation_instance, time):
+def plot_overall_state(simulation_instance, time):
     """
     Visualization of the elevator position / usage and the amount of people waiting in the queues per floor for a
     given simulation step
