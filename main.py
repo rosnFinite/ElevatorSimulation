@@ -1,5 +1,3 @@
-from simulation.skyscraper import Skyscraper
+from visualization.app import app
 
-sky = Skyscraper()
-sky.run_simulation(time=8640)
-print(sky.statistics())
+app.run_server(debug=False)

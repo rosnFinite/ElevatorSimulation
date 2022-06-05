@@ -211,4 +211,4 @@ def update_spawn_behaviour_visual(spawn_behaviour, floor_behaviour, seconds_per_
 
 
 if __name__ == "__main__":
-    app.run_server(debug=False)
+    app.run_server(debug=True)
