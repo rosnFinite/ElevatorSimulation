@@ -45,6 +45,8 @@ class ElevatorController:
     def next_floor(self, elevator_instance):
         """
         Moves elevator to the next floor in the currently specified moving direction
+
+        :param Elevator elevator_instance:
         """
         elevator_instance.current_floor += elevator_instance.direction
         self.check_direction_change(elevator_instance)
@@ -53,6 +55,8 @@ class ElevatorController:
     def check_direction_change(self, elevator_instance):
         """
         Checks if top or ground floor has been reached and inverts the moving direction of the elevator
+
+        :param Elevator elevator_instance:
         """
         # if ground floor and current direction still set to descend further
         if elevator_instance.current_floor == 0 and elevator_instance.direction == -1:
@@ -65,8 +69,11 @@ class ElevatorController:
 
     def release_passengers(self, elevator_instance):
         """
-        Checks if any of the passengers inside the elevator have reached their destination.
-        If destination of a passenger has been reached their transport event is succeeded and they leave the elevator
+        Checks if any of the passenger inside the elevator has reached their destination.
+        If the destination of a passenger has been reached their transport event is succeeded and they
+        leave the elevator
+
+        :param Elevator elevator_instance:
         """
         released = False
         # only do something, if passengers are inside the elevator
@@ -95,6 +102,8 @@ class ElevatorController:
         """
         Checks if any passengers are waiting on the current floor and accept their usage request if the elevator
         is moving in the correct direction and the maximum capacity hasn't been reached
+
+        :param Elevator elevator_instance:
         """
         accepted = False
         self.debug_log(f'Aufzug ID: {elevator_instance.id}')
@@ -119,11 +128,11 @@ class ElevatorController:
                                f'jetzt wartend: {self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up}')
                 waiting_up = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up
 
-        # if the elevator is moving down, there are people waiting on the current floor
-        # and the elevator has free capacity
+        # if the elevator is moving down, there are people waiting on the current floor and the elevator has free
+        # capacity
         if elevator_instance.direction == -1 and waiting_down > 0 and elevator_instance.num_of_passengers < config.ELEVATOR_PAYLOAD:
             accepted = True
-            # pick up waiting passengers until elevator capacity is reached or no more passenger is waiting
+            # pick up waiting passengers until elevator capacity has been reached or no more passenger is waiting
             while elevator_instance.num_of_passengers < config.ELEVATOR_PAYLOAD and waiting_down > 0:
                 request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
                 request.accept_usage_request(elevator_instance.id)
