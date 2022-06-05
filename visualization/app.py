@@ -6,7 +6,7 @@ from dash import Dash, Output, Input, State
 from dash_iconify import DashIconify
 import plotly.graph_objects as go
 
-# intern functions
+# intern modules
 import utils.plotting as plotting
 from utils.parameter_preparation import create_passenger_behaviour
 from components.header import MainHeader
