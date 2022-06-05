@@ -3,7 +3,6 @@ import datetime
 import numpy.random as rnd
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from typing import List
 
 from simulation import config
@@ -30,6 +29,7 @@ class Skyscraper:
         self.queue_usage_log = {"up": [[] for _ in range(config.NUM_OF_FLOORS)],
                                 "down": [[] for _ in range(config.NUM_OF_FLOORS)]}
         # combined dataframe of position/utilization/q_up/q_down for better usage with plotly
+        # created after simulation is finished
         self.df_log = None
         # set the random seed to reliably redo a simulation run
         if random_seed is not None:
@@ -39,7 +39,7 @@ class Skyscraper:
         if passenger_behaviour is not None:
             self.passenger_behaviour = passenger_behaviour
 
-        # Create list of available floors (index:0 = ground floor, index:1 = 1. floor, ...)
+        # Create list of available floors (0 = ground floor, 1 = 1. floor, ...)
         self.floor_list = [Floor(self.__environment, floor_number=x)
                            for x in range(self.num_of_floors)]
         # Creates a controller for all available elevator
@@ -149,6 +149,10 @@ class Skyscraper:
             self.queue_usage_log["down"][index].append(floor.num_waiting_down)
 
     def __get_time_dependent_params(self) -> List[int]:
+        """
+        Compares current time with checkpoints given in passenger_behaviour. If a checkpoint is reached the defined
+        spawnrate and spawnposition for that checkpoint will be used
+        """
         now = int(self.__environment.now)
         dependent_params = self.passenger_behaviour[0]
         for checkpoint in self.passenger_behaviour:
@@ -180,66 +184,6 @@ class Skyscraper:
         """
         self.__environment.run(until=time)
         self.__create_df_log()
-
-    def plot_data(self):
-        fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-        fig.set_size_inches(10, 7)
-        fig.suptitle('Länge der Warteschlangen', fontsize=16)
-        for floor in range(config.NUM_OF_FLOORS):
-            ax1.plot(self.queue_usage_log["up"][floor])
-            ax2.plot(self.queue_usage_log["down"][floor])
-        ax1.title.set_text("Warteschlange 'HOCH'")
-        ax2.title.set_text("Warteschlange 'RUNTER'")
-
-        exp_rates = []
-        r = 1 / self.passenger_behaviour[0][0]
-        for x in range(config.SIMULATION_TIME):
-            if x in self.passenger_behaviour:
-                r = 1 / self.passenger_behaviour[x][0]
-            exp_rates.append(r)
-        ax3.plot(exp_rates)
-
-        plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=None, wspace=None, hspace=0.4)
-        plt.show()
-
-        # Displays number of times a floor has appeared as start or destination of a passenger
-        num_start = [0 for _ in range(config.NUM_OF_FLOORS)]
-        num_destination = [0 for _ in range(config.NUM_OF_FLOORS)]
-        for start, destination in self.passenger_route_log:
-            num_start[start] += 1
-            num_destination[destination] += 1
-
-        fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
-        fig.set_size_inches(10, 7)
-        fig.suptitle('Vorkommen der Etagen als Start und Ziel', fontsize=16)
-        floor_indices = [x for x in range(len(num_start))]
-        bars_start = ax1.bar(floor_indices, num_start, label="Start")
-        bars_destination = ax2.bar(floor_indices, num_destination, label="Ziel")
-        ax1.bar_label(bars_start)
-        ax2.bar_label(bars_destination)
-        ax1.title.set_text("Startetage")
-        ax2.title.set_text("Zieletage")
-        ax1.set_xlabel('Etage')
-        ax2.set_xlabel('Etage')
-        plt.subplots_adjust(left=0.05, bottom=0.07, right=0.93, top=None, wspace=None, hspace=0.4)
-        plt.show()
-
-        # Plot elevator position over time
-        plt.rcParams["figure.figsize"] = (13, 7)
-        for elevator_id in range(config.NUM_OF_ELEVATORS):
-            plt.plot(self.elevator_position_log[elevator_id], linewidth=0.5)
-        plt.show()
-
-        # Plot elevator utilization over time
-        fig, (ax1, ax2, ax3) = plt.subplots(3, sharex=True)
-        fig.set_size_inches(10, 7)
-        fig.suptitle('Aufzugauslastung', fontsize=16)
-        ax1.plot(self.elevator_utilization_log[0])
-        ax2.plot(self.elevator_utilization_log[1])
-        ax3.plot(self.elevator_utilization_log[2])
-
-        plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=None, wspace=None, hspace=0.4)
-        plt.show()
 
     def statistics(self):
         avg_total = self.mean_travel_time + self.mean_queue_time
