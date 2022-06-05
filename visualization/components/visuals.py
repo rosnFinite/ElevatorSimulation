@@ -23,7 +23,7 @@ TimeLine = dmc.Container(
             style={"width": "100%"}
         ),
         dmc.Text(id="drag-value"),
-        dmc.Space(h=30),
         dcc.Graph(id="visual-plot")
-    ]
+    ],
+    style={"marginLeft": "auto", "marginRight": "auto"}
 )

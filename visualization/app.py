@@ -42,22 +42,23 @@ app.layout = dmc.Container(
                     children=[
                         dmc.Grid(
                             children=[
-                                dmc.Col(EnvironmentParameterMenu, span=3),
-                                dmc.Col(PassengerBehaviourMenu, span=3),
-                                dmc.Col(PassengerSpawnratePlot, span=6)
+                                dmc.Col(dmc.Center([EnvironmentParameterMenu]), span=6),
+                                dmc.Col(dmc.Center([PassengerBehaviourMenu]), span=6),
+                                dmc.Col(PassengerSpawnratePlot, span=12)
                             ],
                             style={"marginTop": 20},
                             gutter="xs"
                         ),
-                        dmc.Center(
+                        dmc.Container(
                             children=[
                                 dmc.Button(
                                     "Start Simulation",
                                     id="simulation-button",
                                     leftIcon=[DashIconify(icon="el:play")],
                                     variant="gradient",
+                                    fullWidth=True,
                                     gradient={"from": "teal", "to": "lime", "deg": 105},
-                                    size="md"
+                                    size="md",
                                 ),
                             ],
                             style={"width": "100%", "marginTop": 20}

@@ -62,7 +62,7 @@ def plot_barchart(simulation_instance, time):
             mode="markers+text",
             marker=dict(
                 color="LightSkyBlue",
-                size=20
+                size=40
             ),
             yaxis="y2",
             showlegend=False
@@ -81,6 +81,6 @@ def plot_barchart(simulation_instance, time):
         col=3
     )
     fig.update_yaxes(title_text="Floor", row=1, col=1)
-    fig.update_layout(yaxis2=dict(range=[-0.5, 14.5], tickmode="linear", tick0=0, dtick=1))
+    fig.update_layout(yaxis2=dict(range=[-0.5, 14.5], tickmode="linear", tick0=0, dtick=1), height=1000)
     return fig
 
