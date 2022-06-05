@@ -1,6 +1,5 @@
 """
-This files provides usable configurations
-for the simulations.
+This file contains the default configuration of the simulation
 """
 
 
