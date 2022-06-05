@@ -1,7 +1,18 @@
+"""
+Function to translate user defined behaviour to a format used by the simulation instance
+"""
 import numpy as np
 
 
-def create_passenger_behaviour(seconds_per_step: int, spawn_behaviour: str, floor_behaviour: str) -> dict:
+def create_passenger_behaviour(seconds_per_step, spawn_behaviour, floor_behaviour):
+    """
+    Changes nine checkpoints (predefined amount of checkpoints) to match the behaviour specified by the user
+
+    :param int seconds_per_step:
+    :param str spawn_behaviour:
+    :param str floor_behaviour:
+    :return: Dict[int, tuple(int,int)]
+    """
     default_spawnrates = [100, 2, 3, 3, 8, 3, 3, 2, 100]
     default_start_dest = [(None, None),
                           (0, None),
