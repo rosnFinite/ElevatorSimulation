@@ -1,3 +1,6 @@
+"""
+Functions for creating plotly figures to visualize results of the simulation
+"""
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd

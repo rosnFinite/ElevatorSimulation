@@ -1,19 +1,10 @@
+"""
+Dash Component for displaying overall statistical information
+"""
 import dash_mantine_components as dmc
 from dash import dcc
 
-"""
-Center
-    Group
-        Paper
-            Group
-                Text
-                Text
-                
-    Graph
-    Graph
-"""
-
-TextualStats = dmc.Center(
+Statistics = dmc.Center(
     style={"width": "90vw"},
     children=[
         dmc.Group(
