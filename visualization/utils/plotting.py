@@ -1,10 +1,20 @@
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
+from typing import List
 from plotly.subplots import make_subplots
+
+from skyscraper import Skyscraper
 
 
 def plot_waiting(simulation_instance, direction):
+    """
+    Plots the amount of passengers waiting on each floor over the complete simulation time
+
+    :param Skyscraper simulation_instance:
+    :param str direction: "up" for plotting Q-up otherwise plotting Q-down
+    :return: plotly.graph_objects.Figure
+    """
     fig = go.Figure()
     if direction == "up":
         log = simulation_instance.df_log.loc[:, "up_0":"up_14"]
@@ -23,12 +33,27 @@ def plot_waiting(simulation_instance, direction):
 
 
 def plot_distribution(value_list, title):
+    """
+    Plots a histogram visualizing the time each passenger had to wait to use the elevator
+
+    :param List[float] value_list: list of times each passenger had to wait
+    :param str title: plot title
+    :return: plotly.graph_objects.Figure
+    """
     df = pd.DataFrame(value_list, columns=["time[s]"])
     fig = px.histogram(df, x="time[s]", marginal="box", hover_data=df.columns, title=title, width=800)
     return fig
 
 
 def plot_barchart(simulation_instance, time):
+    """
+    Visualization of the elevator position / usage and the amount of people waiting in the queues per floor for a
+    given simulation step
+
+    :param Skyscraper simulation_instance: main simulation instance
+    :param int time: simulation step to visualize
+    :return: plotly.graph_objects.Figure
+    """
     floor_name = [str(x) for x in range(15)]
     # get data for specified time and direction
     fig = make_subplots(rows=1, cols=3, column_width=[0.2, 0.6, 0.2],
