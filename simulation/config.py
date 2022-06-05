@@ -3,11 +3,18 @@ This files provides usable configurations
 for the simulations.
 """
 
-SECONDS_PER_STEP = 10
-SIMULATION_TIME = int(24 * 60 * (60 / SECONDS_PER_STEP))
+
 NUM_OF_FLOORS = 15
 NUM_OF_ELEVATORS = 3
 ELEVATOR_PAYLOAD = 5
+VERBOSE = False
+
+
+# ------------------------------ changeable via dash frontend ------------------------------
+# can be changed if frontend is not used to run and visualize the results of the simulation
+
+SECONDS_PER_STEP = 10
+SIMULATION_TIME = int(24 * 60 * (60 / SECONDS_PER_STEP))
 
 # Checkpoints to change exp rate and default start and destination floor
 # Key == Simulation Step (e.g. 8am = 8 * 60 * (60 / SECONDS_PER_STEP))
@@ -21,4 +28,3 @@ PASSENGER_BEHAVIOUR = {0: [100, None, None],  # scale=100, start=random, destina
                        5760: [2, None, 0],  # scale=4, start=random, destination=0        (from 16:00)
                        6120: [100, None, None]}  # scale=12, start=random, destination=random  (from 17:00)
 
-VERBOSE = False
