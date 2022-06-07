@@ -117,13 +117,13 @@ class Skyscraper:
     def __passenger_spawner(self):
         while True:
             # get the current behaviour parameters
-            exp_rate, start, destination = self.__get_time_dependent_params()
+            exp_rate, start_f, destination_f = self.__get_time_dependent_params()
             waiting_time = rnd.exponential(exp_rate)
             yield self.__environment.timeout(waiting_time)
             Passenger(environment=self.__environment,
                       skyscraper=self,
-                      starting_floor=start,
-                      destination_floor=destination,
+                      starting_floor=start_f,
+                      destination_floor=destination_f,
                       passenger_id=self.num_passengers)
             self.num_passengers += 1
 
@@ -203,4 +203,4 @@ if __name__ == "__main__":
     sky = Skyscraper(random_seed=12345)
     # time = 8640  // 1 sim step = 10 sec
     sky.run_simulation(config.SIMULATION_TIME)
-    print(sky.statistics())
+    print(time/5)
