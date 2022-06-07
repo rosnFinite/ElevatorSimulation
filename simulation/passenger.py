@@ -9,7 +9,7 @@ from simulation.requests import UsageRequest, FloorRequest
 
 def generate_random_start_and_destination() -> np.ndarray:
     """
-    Generates starting(current)floor and destination floor.
+    Generates a starting and destination floor.
     Guarantees that
     - start != destination
     - 0 <= start/destination < NUM_OF_FLOORS
@@ -19,7 +19,7 @@ def generate_random_start_and_destination() -> np.ndarray:
 
 def generate_random_floor(exclude: int) -> int:
     """
-    Generates a random floor for the passenger, either destination or start
+    Generates a random floor for the passenger, either as destination or start
     """
     return np.random.choice(np.setdiff1d(range(1, 4), exclude))
 
@@ -33,14 +33,14 @@ class Passenger:
         self.passenger_id = passenger_id
         self.skyscraper = skyscraper
         self.__environment = environment
-        # if neither start nor destination is provided
+        # if neither start nor destination was provided
         if starting_floor is None and destination_floor is None:
             self.starting_floor, self.destination_floor = generate_random_start_and_destination()
-        # if starting floor is provided but no destination
+        # if starting floor was provided but no destination
         elif starting_floor is not None and destination_floor is None:
             self.starting_floor, self.destination_floor = [starting_floor,
                                                            generate_random_floor(exclude=starting_floor)]
-        # if destination floor is provided but no start
+        # if destination floor was provided but no start
         elif starting_floor is None and destination_floor is not None:
             self.starting_floor, self.destination_floor = [generate_random_floor(exclude=destination_floor),
                                                            destination_floor]
@@ -56,9 +56,9 @@ class Passenger:
     def __use_elevator(self):
         """
         Process of a passenger using an elevator.
-        1. Request an elevator (enter queue for up or down on the current floor, depending on passenger route)
+        1. Request an elevator (enter correct queue on the current floor)
         2. Enter the elevator
-        3. Put a hold request for the specified destination inside the elevators passenger_request queue
+        3. Put a FloorRequest for the specified destination inside the elevators passenger_request queue
         """
         start_time_total = self.__environment.now
         request_flag = self.__environment.event()
@@ -75,7 +75,7 @@ class Passenger:
         end_queue_time = self.__environment.now
         self.debug_log(f'{elevator_id} accepted transportation request')
 
-        # Request the elevator to hold at your destination
+        # Request the elevator to stop at your destination
         start_time_transportation = self.__environment.now
         floor_flag = self.__environment.event()
         floor_request = FloorRequest(floor_flag, self.destination_floor)
