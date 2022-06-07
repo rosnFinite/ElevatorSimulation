@@ -201,5 +201,4 @@ if __name__ == "__main__":
     sky = Skyscraper(random_seed=12345)
     # time = 8640  // 1 sim step = 10 sec
     sky.run_simulation(config.SIMULATION_TIME)
-    sky.plot_data()
     print(sky.statistics())
