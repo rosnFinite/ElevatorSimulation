@@ -6,14 +6,13 @@ from simulation import config
 
 class Floor:
     def __init__(self, environment: Environment, floor_number: int):
-        # floor which is represented by this object
         self.floor_number = floor_number
         # Queues representing waiting passengers on this floor
-        # only create a queue for "up" if it is the ground floor
+        # ground floor does not need a down-queue
         if floor_number == 0:
             self.queue_up = Store(environment)
             self.queue_down = None
-        # only create a queue for "down" if it is the top floor
+        # same as before for the top floor and up-queue
         elif floor_number == config.NUM_OF_FLOORS-1:
             self.queue_up = None
             self.queue_down = Store(environment)
@@ -24,7 +23,7 @@ class Floor:
     @property
     def num_waiting_up(self):
         """
-        Returns the amount of people currently waiting on this floor for the elevator to
+        Returns the amount of people currently waiting on this floor to
         reach a higher floor
 
         :return int:
@@ -36,7 +35,7 @@ class Floor:
     @property
     def num_waiting_down(self):
         """
-        Returns the amount of people currently waiting on this floor for the elevator to
+        Returns the amount of people currently waiting on this floor to
         reach a lower floor
 
         :return int:
