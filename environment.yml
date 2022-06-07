@@ -4,9 +4,9 @@ channels:
 dependencies:
   - python=3.7
   - pytorch
-  - matplotlib
   - plotly
   - pandas
+  - numpy
   - pip
   - dash
   - conda-forge::dash-mantine-components
