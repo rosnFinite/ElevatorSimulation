@@ -33,7 +33,7 @@ MainHeader = dmc.Header(
                                           src="../assets/SimLogo.png", alt="Logo", width=40
                                         ),
                                         dmc.MediaQuery(
-                                            create_home_link("Elevator Simulation"),
+                                            create_home_link("Skyscraper Simulation"),
                                             smallerThan="sm",
                                             styles={"display": "none"},
                                         ),
