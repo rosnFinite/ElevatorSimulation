@@ -16,7 +16,7 @@ class Elevator:
         self.current_floor = starting_floor
         self.passenger_requests = Store(environment, capacity=config.ELEVATOR_PAYLOAD)
         self.num_of_passengers = 0
-        # If the elevator starts on the top floor set direction to down
+        # If the elevator starts on the top floor set initial direction to downwards
         if self.current_floor == config.NUM_OF_FLOORS - 1:
             self.direction = -1
         else:
@@ -95,12 +95,13 @@ class ElevatorController:
             # re-add passengers still inside the elevator to passenger_requests
             for passenger in tmp_q:
                 elevator_instance.passenger_requests.put(passenger)
+        # If any passenger left, the elevator had to stop => 1 simulation step
         if released:
             yield self.__environment.timeout(1)
 
     def accept_passengers(self, elevator_instance):
         """
-        Checks if any passengers are waiting on the current floor and accept their usage request if the elevator
+        Checks if any passenger is waiting on the current floor and accept his usage request if the elevator
         is moving in the correct direction and the maximum capacity hasn't been reached
 
         :param Elevator elevator_instance:
