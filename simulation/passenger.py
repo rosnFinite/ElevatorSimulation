@@ -51,9 +51,9 @@ class Passenger:
         self.debug_log = print_silent
         if config.VERBOSE:
             self.debug_log = print_verbose
-        self.__environment.process(self.use_elevator())
+        self.__environment.process(self.__use_elevator())
 
-    def use_elevator(self):
+    def __use_elevator(self):
         """
         Process of a passenger using an elevator.
         1. Request an elevator (enter queue for up or down on the current floor, depending on passenger route)
