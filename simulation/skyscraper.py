@@ -31,7 +31,8 @@ class Skyscraper:
         # combined dataframe of position/utilization/q_up/q_down for better usage with plotly
         # created after simulation is finished
         self.df_log = None
-        # set the random seed to reliably redo a simulation run
+        # -------------------------------------------------------------------
+        # set a random seed to reliably redo a simulation run
         if random_seed is not None:
             rnd.seed(random_seed)
         self.passenger_behaviour = config.PASSENGER_BEHAVIOUR
@@ -39,7 +40,7 @@ class Skyscraper:
         if passenger_behaviour is not None:
             self.passenger_behaviour = passenger_behaviour
 
-        # Create list of available floors (0 = ground floor, 1 = 1. floor, ...)
+        # Create list of available floors (0 = ground floor, 1 = 1. floor, ..., 14 = 14. floor)
         self.floor_list = [Floor(self.__environment, floor_number=x)
                            for x in range(self.num_of_floors)]
         # Creates a controller for all available elevator
@@ -115,6 +116,7 @@ class Skyscraper:
 
     def __passenger_spawner(self):
         while True:
+            # get the current behaviour parameters
             exp_rate, start, destination = self.__get_time_dependent_params()
             waiting_time = rnd.exponential(exp_rate)
             yield self.__environment.timeout(waiting_time)
@@ -150,8 +152,8 @@ class Skyscraper:
 
     def __get_time_dependent_params(self) -> List[int]:
         """
-        Compares current time with checkpoints given in passenger_behaviour. If a checkpoint is reached the defined
-        spawnrate and spawnposition for that checkpoint will be used
+        Compares the current simulation step with the  checkpoints given in passenger_behaviour.
+        If a checkpoint is reached the defined expectancy value and spawnposition for that checkpoint will be used
         """
         now = int(self.__environment.now)
         dependent_params = self.passenger_behaviour[0]
