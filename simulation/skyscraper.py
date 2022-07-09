@@ -16,8 +16,7 @@ from simulation.elevator import Elevator, ElevatorController
 class Action(enum.Enum):
     UP = 0
     DOWN = 1
-    RELEASE = 2
-    ACCEPT = 3
+    HOLD = 2
 
 
 class Skyscraper:
@@ -124,6 +123,7 @@ class Skyscraper:
     def get_queue_down_log(self):
         return [self.queue_usage_log["down"][x] for x in range(config.NUM_OF_FLOORS)]
 
+
     def __passenger_spawner(self):
         while True:
             # get the current behaviour parameters
@@ -190,39 +190,48 @@ class Skyscraper:
         df_el_util = pd.DataFrame.from_dict(prep_el_util)
         self.df_log = pd.concat([df_q_up, df_q_down, df_el_pos, df_el_util], axis=1)
 
-    def run_simulation(self, time: int):
+    def run_simulation(self, until_time: int):
         """
         Run the simulation until the given time is reached
         """
-        self.environment.run(until=time)
+        self.environment.run(until=until_time)
         self.__create_df_log()
 
-    def step(self, a):
+    def schedule_action(self, a):
+        if a == 0:
+            self.environment.process(self.elevator_controller.up(self.elevator_list[0]))
+        if a == 1:
+            self.environment.process(self.elevator_controller.down(self.elevator_list[0]))
+        if a == 2:
+            self.environment.process(self.elevator_controller.hold(self.elevator_list[0]))
+
+    def step(self):
         """
         Runs simulation for one time step. Returns next state
         """
+        self.environment.run(until=self.environment.now+1)
+
+        return self.get_state()
+
+    def get_state(self):
+        f_waiting_up = [floor.num_waiting_up for floor in self.floor_list]
+        f_waiting_down = [floor.num_waiting_down for floor in self.floor_list]
+        e0_pos = self.elevator_list[0].current_floor
+        e1_pos = self.elevator_list[1].current_floor
+        e2_pos = self.elevator_list[2].current_floor
+        e0_destinations = self.elevator_list[0].passenger_requests
+        e1_destinations = self.elevator_list[1].passenger_requests
+        e2_destinations = self.elevator_list[2].passenger_requests
+        state = (f_waiting_up + f_waiting_down + [e0_pos] + e0_destinations)
+        reward = self.step_reward
         self.step_reward = 0
-        sim_time = self.environment.now
-        if sim_time < config.SIMULATION_TIME:
-            self.environment.run(until=sim_time+1)
-            f_waiting_up = [floor.num_waiting_up for floor in self.floor_list]
-            f_waiting_down = [floor.num_waiting_down for floor in self.floor_list]
-            e0_pos = self.elevator_list[0].current_floor
-            e1_pos = self.elevator_list[1].current_floor
-            e2_pos = self.elevator_list[2].current_floor
-            e0_destinations = self.elevator_list[0].passenger_requests
-            e1_destinations = self.elevator_list[1].passenger_requests
-            e2_destinations = self.elevator_list[2].passenger_requests
-            state = (f_waiting_up + f_waiting_down + [e0_pos] + e0_destinations)
+        isDone = False
 
-            if a == Action.UP:
-                self.elevator_controller.up(self.elevator_list[0])
-            if a == Action.DOWN:
-                self.elevator_controller.down(self.elevator_list[0])
-            if a == Action.HOLD:
-                self.elevator_controller.hold(self.elevator_list[0])
+        if self.environment.now == config.SIMULATION_TIME-1:
+            reward = (self.num_generated_passengers - self.num_transported_passengers) * -1
+            isDone = True
 
-            return state, self.step_reward, True
+        return state, reward, isDone
 
     def statistics(self):
         avg_total = self.mean_travel_time + self.mean_queue_time

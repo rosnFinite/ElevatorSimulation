@@ -1,5 +1,5 @@
 import random
-from math import exp
+import numpy as np
 
 from simpy import Environment, Store
 
@@ -40,12 +40,14 @@ class Elevator:
 
 def calc_accept_reward(start_time, end_time):
     time_diff = end_time - start_time
-    return (2/(0.08+exp((1/5)*time_diff-5.9))) - 12.5
+    # return (2/(0.08+np.exp((1/5)*time_diff-5.9))) - 12.5
+    return (2/(0.2+np.exp((1/5)*time_diff-3.5))) / 3
 
 
 def calc_release_reward(start_time, end_time):
     time_diff = end_time - start_time
-    return (2/(0.11+exp((1/3)*time_diff-6))) - 6
+    # return (2/(0.11+np.exp((1/3)*time_diff-6))) - 6
+    return (2 / (0.2 + np.exp((1 / 5) * time_diff - 3.5))) / 3
 
 
 class ElevatorController:
@@ -173,24 +175,43 @@ class ElevatorController:
     def up(self, elevator_instance):
         if elevator_instance.current_floor != config.NUM_OF_FLOORS - 1:
             elevator_instance.current_floor += 1
+            # self.skyscraper.step_reward += 1
         yield self.__environment.timeout(1)
 
     def down(self, elevator_instance):
         if elevator_instance.current_floor != 0:
             elevator_instance.current_floor -= 1
-        yield self.__environment.timeout()
+            # self.skyscraper.step_reward += 1
+        yield self.__environment.timeout(1)
 
-    def __accept_passenger_and_update_elevator_state(self, elevator_instance, direction):
-        if direction == 1:
-            request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_up.get()
-        else:
-            request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
-        self.skyscraper += calc_accept_reward(request.request_time, self.__environment.now)
-        request.accept_usage_request(elevator_instance.id)
-        elevator_instance.num_of_passengers += 1
+    def __accept_passenger_and_update_elevator_state(self, elevator_instance):
+        waiting_up = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up
+        waiting_down = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down
+        total_waiting = waiting_up + waiting_down
 
-        return self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up, \
-               self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down
+        hasAccepted = False
+        while total_waiting > 0 and elevator_instance.num_of_passengers < config.ELEVATOR_PAYLOAD:
+            if waiting_up > 0 and waiting_down > 0:
+                hasAccepted = True
+                k = random.randint(0, 1)
+                if k == 0:
+                    request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_up.get()
+                else:
+                    request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
+            elif waiting_up > 0:
+                request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_up.get()
+            else:
+                request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
+
+            self.skyscraper.step_reward += calc_accept_reward(request.request_time, self.__environment.now)
+            request.accept_usage_request(elevator_instance.id)
+            elevator_instance.num_of_passengers += 1
+
+            waiting_up = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up
+            waiting_down = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down
+            total_waiting = waiting_up + waiting_down
+
+        return hasAccepted
 
     def __release_passenger_and_update_elevator_state(self, elevator_instance):
         released = False
@@ -218,35 +239,8 @@ class ElevatorController:
         return released
 
     def hold(self, elevator_instance):
-        reward = 0
-        waiting_up = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up
-        waiting_down = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down
-        total_waiting = waiting_up + waiting_down
+        hasReleased = self.__environment.process(self.__release_passenger_and_update_elevator_state(elevator_instance))
+        hasAccepted = self.__environment.process(self.__accept_passenger_and_update_elevator_state(elevator_instance))
 
-        hasReleased = self.__release_passenger_and_update_elevator_state(elevator_instance)
-        if hasReleased:
-            yield self.__environment.timeout(1)
-
-        hasAccepted = False
-        while elevator_instance.num_of_passengers < config.ELEVATOR_PAYLOAD and total_waiting > 0:
-            if waiting_up > 0 and waiting_down > 0:
-                hasAccepted = True
-                k = random.randint(0, 1)
-                if k == 0:
-                    waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(
-                        elevator_instance, direction=0)
-                else:
-                    waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(
-                        elevator_instance, direction=1)
-            elif waiting_up > 0:
-                hasAccepted = True
-                waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(elevator_instance,
-                                                                                                     direction=1)
-            else:
-                hasAccepted = True
-                waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(elevator_instance,
-                                                                                                direction=0)
-            total_waiting = waiting_up + waiting_down
-
-        if hasAccepted:
+        if hasAccepted or hasReleased:
             yield self.__environment.timeout(1)
