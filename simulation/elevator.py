@@ -1,3 +1,6 @@
+import random
+from math import exp
+
 from simpy import Environment, Store
 
 # import for intern files
@@ -14,7 +17,8 @@ class Elevator:
         self.__environment = environment
         self.__controller = controller
         self.current_floor = starting_floor
-        self.passenger_requests = Store(environment, capacity=config.ELEVATOR_PAYLOAD)
+        self.passenger_requests_store = Store(environment, capacity=config.ELEVATOR_PAYLOAD)
+        self.passenger_requests = [0 for _ in range(config.NUM_OF_FLOORS)]
         self.num_of_passengers = 0
         # If the elevator starts on the top floor set initial direction to downwards
         if self.current_floor == config.NUM_OF_FLOORS - 1:
@@ -24,7 +28,7 @@ class Elevator:
         self.debug_log = print_silent
         if config.VERBOSE:
             self.debug_log = print_verbose
-        self.__environment.process(self.__transport())
+        # self.__environment.process(self.__transport())
 
     def __transport(self):
         while True:
@@ -34,11 +38,22 @@ class Elevator:
             self.debug_log("----------------------------------")
 
 
+def calc_accept_reward(start_time, end_time):
+    time_diff = end_time - start_time
+    return (2/(0.08+exp((1/5)*time_diff-5.9))) - 12.5
+
+
+def calc_release_reward(start_time, end_time):
+    time_diff = end_time - start_time
+    return (2/(0.11+exp((1/3)*time_diff-6))) - 6
+
+
 class ElevatorController:
     def __init__(self, environment: Environment, skyscraper):
         self.__environment = environment
         self.skyscraper = skyscraper
         self.debug_log = print_silent
+        self.step_reward = 0
         if config.VERBOSE:
             self.debug_log = print_verbose
 
@@ -77,15 +92,16 @@ class ElevatorController:
         """
         released = False
         # only do something, if passengers are inside the elevator
-        if len(elevator_instance.passenger_requests.items) > 0:
+        if len(elevator_instance.passenger_requests_store.items) > 0:
             tmp_q = []
             # Check every passenger inside elevator
-            while len(elevator_instance.passenger_requests.items) > 0:
-                request = yield elevator_instance.passenger_requests.get()
+            while len(elevator_instance.passenger_requests_store.items) > 0:
+                request = yield elevator_instance.passenger_requests_store.get()
                 # release passenger if he is on his desired floor
                 if request.destination_floor == elevator_instance.current_floor:
                     request.reached_floor()
                     elevator_instance.num_of_passengers -= 1
+                    elevator_instance.passenger_requests[elevator_instance.current_floor] -= 1
                     released = True
                     self.debug_log(f'Fahrgast auf Etage {elevator_instance.current_floor} herausgelassen. '
                                    f'Anzahl Fahrgäste: {elevator_instance.num_of_passengers}')
@@ -94,7 +110,7 @@ class ElevatorController:
 
             # re-add passengers still inside the elevator to passenger_requests
             for passenger in tmp_q:
-                elevator_instance.passenger_requests.put(passenger)
+                elevator_instance.passenger_requests_store.put(passenger)
         # If any passenger left, the elevator had to stop => 1 simulation step
         if released:
             yield self.__environment.timeout(1)
@@ -111,7 +127,8 @@ class ElevatorController:
         self.debug_log(f'Etage: {elevator_instance.current_floor}')
         self.debug_log(f'Richtung: {elevator_instance.direction}')
         self.debug_log(f'Wartend hoch: {self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up}')
-        self.debug_log(f'Wartend runter: {self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down}')
+        self.debug_log(
+            f'Wartend runter: {self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down}')
 
         waiting_up = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up
         waiting_down = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down
@@ -145,4 +162,91 @@ class ElevatorController:
 
         # If any passenger was accepted the elevator had to stop => 1 simulation step
         if accepted:
+            yield self.__environment.timeout(1)
+
+    # ===============================================================================================================
+    # =                                                                                                             =
+    # =                                       REF METHODS                                                           =
+    # =                                                                                                             =
+    # ===============================================================================================================
+
+    def up(self, elevator_instance):
+        if elevator_instance.current_floor != config.NUM_OF_FLOORS - 1:
+            elevator_instance.current_floor += 1
+        yield self.__environment.timeout(1)
+
+    def down(self, elevator_instance):
+        if elevator_instance.current_floor != 0:
+            elevator_instance.current_floor -= 1
+        yield self.__environment.timeout()
+
+    def __accept_passenger_and_update_elevator_state(self, elevator_instance, direction):
+        if direction == 1:
+            request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_up.get()
+        else:
+            request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
+        self.skyscraper += calc_accept_reward(request.request_time, self.__environment.now)
+        request.accept_usage_request(elevator_instance.id)
+        elevator_instance.num_of_passengers += 1
+
+        return self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up, \
+               self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down
+
+    def __release_passenger_and_update_elevator_state(self, elevator_instance):
+        released = False
+        # only do something, if passengers are inside the elevator
+        if len(elevator_instance.passenger_requests_store.items) > 0:
+            tmp_q = []
+            # Check every passenger inside elevator
+            while len(elevator_instance.passenger_requests_store.items) > 0:
+                request = yield elevator_instance.passenger_requests_store.get()
+                # release passenger if he is on his desired floor
+                if request.destination_floor == elevator_instance.current_floor:
+                    self.skyscraper.step_reward += calc_release_reward(request.request_time, self.__environment.now)
+                    request.reached_floor()
+                    elevator_instance.num_of_passengers -= 1
+                    elevator_instance.passenger_requests[elevator_instance.current_floor] -= 1
+                    released = True
+                    self.debug_log(f'Fahrgast auf Etage {elevator_instance.current_floor} herausgelassen. '
+                                   f'Anzahl Fahrgäste: {elevator_instance.num_of_passengers}')
+                    continue
+                tmp_q.append(request)
+
+            # re-add passengers still inside the elevator to passenger_requests
+            for passenger in tmp_q:
+                elevator_instance.passenger_requests_store.put(passenger)
+        return released
+
+    def hold(self, elevator_instance):
+        reward = 0
+        waiting_up = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_up
+        waiting_down = self.skyscraper.floor_list[elevator_instance.current_floor].num_waiting_down
+        total_waiting = waiting_up + waiting_down
+
+        hasReleased = self.__release_passenger_and_update_elevator_state(elevator_instance)
+        if hasReleased:
+            yield self.__environment.timeout(1)
+
+        hasAccepted = False
+        while elevator_instance.num_of_passengers < config.ELEVATOR_PAYLOAD and total_waiting > 0:
+            if waiting_up > 0 and waiting_down > 0:
+                hasAccepted = True
+                k = random.randint(0, 1)
+                if k == 0:
+                    waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(
+                        elevator_instance, direction=0)
+                else:
+                    waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(
+                        elevator_instance, direction=1)
+            elif waiting_up > 0:
+                hasAccepted = True
+                waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(elevator_instance,
+                                                                                                     direction=1)
+            else:
+                hasAccepted = True
+                waiting_up, waiting_down = self.__accept_passenger_and_update_elevator_state(elevator_instance,
+                                                                                                direction=0)
+            total_waiting = waiting_up + waiting_down
+
+        if hasAccepted:
             yield self.__environment.timeout(1)

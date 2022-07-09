@@ -62,7 +62,7 @@ class Passenger:
         """
         start_time_total = self.__environment.now
         request_flag = self.__environment.event()
-        usage_request = UsageRequest(request_flag)
+        usage_request = UsageRequest(request_flag, start_time_total)
 
         # Enter the correct queue corresponding to start and destination
         start_queue_time = self.__environment.now
@@ -78,8 +78,9 @@ class Passenger:
         # Request the elevator to stop at your destination
         start_time_transportation = self.__environment.now
         floor_flag = self.__environment.event()
-        floor_request = FloorRequest(floor_flag, self.destination_floor)
-        yield self.skyscraper.elevator_list[elevator_id].passenger_requests.put(floor_request)
+        floor_request = FloorRequest(floor_flag, self.destination_floor, start_time_transportation)
+        yield self.skyscraper.elevator_list[elevator_id].passenger_requests_store.put(floor_request)
+        self.skyscraper.elevator_list[elevator_id].passenger_requests[self.destination_floor] += 1
         yield floor_flag
 
         # log the total time to destination, waiting time and transportation time

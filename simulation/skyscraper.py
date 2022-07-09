@@ -1,3 +1,6 @@
+import enum
+import time
+
 import simpy
 import datetime
 import numpy.random as rnd
@@ -10,14 +13,21 @@ from simulation.passenger import Passenger
 from simulation.floor import Floor
 from simulation.elevator import Elevator, ElevatorController
 
+class Action(enum.Enum):
+    UP = 0
+    DOWN = 1
+    RELEASE = 2
+    ACCEPT = 3
+
 
 class Skyscraper:
     def __init__(self, random_seed: int = None, passenger_behaviour: dict = None):
-        self.__environment = simpy.Environment()
-        self.__environment.process(self.__passenger_spawner())
-        self.__environment.process(self.__observer())
+        self.environment = simpy.Environment()
+        self.environment.process(self.__passenger_spawner())
+        self.environment.process(self.__observer())
         self.num_of_floors = config.NUM_OF_FLOORS
         self.num_of_elevators = config.NUM_OF_ELEVATORS
+        self.step_reward = 0
         # --------------------------Simulation logs--------------------------
         self.num_passengers = 0
         self.elevator_position_log = [[] for _ in range(config.NUM_OF_ELEVATORS)]
@@ -41,11 +51,11 @@ class Skyscraper:
             self.passenger_behaviour = passenger_behaviour
 
         # Create list of available floors (0 = ground floor, 1 = 1. floor, ..., 14 = 14. floor)
-        self.floor_list = [Floor(self.__environment, floor_number=x)
+        self.floor_list = [Floor(self.environment, floor_number=x)
                            for x in range(self.num_of_floors)]
         # Creates a controller for all available elevator
-        self.elevator_controller = ElevatorController(self.__environment, self)
-        self.elevator_list = [Elevator(x, self.__environment,
+        self.elevator_controller = ElevatorController(self.environment, self)
+        self.elevator_list = [Elevator(x, self.environment,
                                        starting_floor=x * 7,
                                        controller=self.elevator_controller)
                               for x in range(self.num_of_elevators)]
@@ -119,8 +129,8 @@ class Skyscraper:
             # get the current behaviour parameters
             exp_rate, start_f, destination_f = self.__get_time_dependent_params()
             waiting_time = rnd.exponential(exp_rate)
-            yield self.__environment.timeout(waiting_time)
-            Passenger(environment=self.__environment,
+            yield self.environment.timeout(waiting_time)
+            Passenger(environment=self.environment,
                       skyscraper=self,
                       starting_floor=start_f,
                       destination_floor=destination_f,
@@ -129,7 +139,7 @@ class Skyscraper:
 
     def __observer(self):
         while True:
-            yield self.__environment.timeout(1)
+            yield self.environment.timeout(1)
             self.__log_elevator_position()
             self.__log_waiting_passengers()
             self.__log_elevator_utilization()
@@ -155,7 +165,7 @@ class Skyscraper:
         Compares the current simulation step with the  checkpoints given in passenger_behaviour.
         If a checkpoint is reached the defined expectancy value and spawnposition for that checkpoint will be used
         """
-        now = int(self.__environment.now)
+        now = int(self.environment.now)
         dependent_params = self.passenger_behaviour[0]
         for checkpoint in self.passenger_behaviour:
             if now < checkpoint:
@@ -184,8 +194,35 @@ class Skyscraper:
         """
         Run the simulation until the given time is reached
         """
-        self.__environment.run(until=time)
+        self.environment.run(until=time)
         self.__create_df_log()
+
+    def step(self, a):
+        """
+        Runs simulation for one time step. Returns next state
+        """
+        self.step_reward = 0
+        sim_time = self.environment.now
+        if sim_time < config.SIMULATION_TIME:
+            self.environment.run(until=sim_time+1)
+            f_waiting_up = [floor.num_waiting_up for floor in self.floor_list]
+            f_waiting_down = [floor.num_waiting_down for floor in self.floor_list]
+            e0_pos = self.elevator_list[0].current_floor
+            e1_pos = self.elevator_list[1].current_floor
+            e2_pos = self.elevator_list[2].current_floor
+            e0_destinations = self.elevator_list[0].passenger_requests
+            e1_destinations = self.elevator_list[1].passenger_requests
+            e2_destinations = self.elevator_list[2].passenger_requests
+            state = (f_waiting_up + f_waiting_down + [e0_pos] + e0_destinations)
+
+            if a == Action.UP:
+                self.elevator_controller.up(self.elevator_list[0])
+            if a == Action.DOWN:
+                self.elevator_controller.down(self.elevator_list[0])
+            if a == Action.HOLD:
+                self.elevator_controller.hold(self.elevator_list[0])
+
+            return state, self.step_reward, True
 
     def statistics(self):
         avg_total = self.mean_travel_time + self.mean_queue_time
@@ -203,4 +240,5 @@ if __name__ == "__main__":
     sky = Skyscraper(random_seed=12345)
     # time = 8640  // 1 sim step = 10 sec
     sky.run_simulation(config.SIMULATION_TIME)
-    print(time/5)
+    print(sky.statistics())
+
