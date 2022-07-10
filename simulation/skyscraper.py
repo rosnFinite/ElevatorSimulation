@@ -197,13 +197,14 @@ class Skyscraper:
         self.environment.run(until=until_time)
         self.__create_df_log()
 
-    def schedule_action(self, a):
-        if a == 0:
-            self.environment.process(self.elevator_controller.up(self.elevator_list[0]))
-        if a == 1:
-            self.environment.process(self.elevator_controller.down(self.elevator_list[0]))
-        if a == 2:
-            self.environment.process(self.elevator_controller.hold(self.elevator_list[0]))
+    def schedule_action(self, action_list):
+        for index, a in enumerate(action_list):
+            if a == 0:
+                self.environment.process(self.elevator_controller.up(self.elevator_list[index]))
+            if a == 1:
+                self.environment.process(self.elevator_controller.down(self.elevator_list[index]))
+            if a == 2:
+                self.environment.process(self.elevator_controller.hold(self.elevator_list[index]))
 
     def step(self):
         """
@@ -214,21 +215,24 @@ class Skyscraper:
         return self.get_state()
 
     def get_state(self):
-        f_waiting_up = [floor.num_waiting_up for floor in self.floor_list]
-        f_waiting_down = [floor.num_waiting_down for floor in self.floor_list]
-        e0_pos = self.elevator_list[0].current_floor
-        e1_pos = self.elevator_list[1].current_floor
-        e2_pos = self.elevator_list[2].current_floor
-        e0_destinations = self.elevator_list[0].passenger_requests
-        e1_destinations = self.elevator_list[1].passenger_requests
-        e2_destinations = self.elevator_list[2].passenger_requests
-        state = (f_waiting_up + f_waiting_down + [e0_pos] + e0_destinations)
+        f_waiting_up = [floor.num_waiting_up for floor in self.floor_list]  # 15
+        f_waiting_down = [floor.num_waiting_down for floor in self.floor_list]  # 15
+        e0_pos = self.elevator_list[0].current_floor  # 1
+        e1_pos = self.elevator_list[1].current_floor  # 1
+        e2_pos = self.elevator_list[2].current_floor  # 1
+        e0_util = self.elevator_list[0].num_of_passengers  # 1
+        e1_util = self.elevator_list[1].num_of_passengers  # 1
+        e2_util = self.elevator_list[2].num_of_passengers  # 1
+        e0_destinations = self.elevator_list[0].passenger_requests  # 15
+        e1_destinations = self.elevator_list[1].passenger_requests  # 15
+        e2_destinations = self.elevator_list[2].passenger_requests  # 15
+        state = ([self.environment.now] + f_waiting_up + f_waiting_down + [e0_pos] + [e1_pos] + [e2_pos] +
+                 [e0_util] + [e1_util] + [e2_util] + e0_destinations + e1_destinations + e2_destinations)
         reward = self.step_reward
         self.step_reward = 0
         isDone = False
 
         if self.environment.now == config.SIMULATION_TIME-1:
-            reward = (self.num_generated_passengers - self.num_transported_passengers) * -1
             isDone = True
 
         return state, reward, isDone

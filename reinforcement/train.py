@@ -4,6 +4,11 @@ import json
 from reinforcement.network import A2CNetwork
 from skyscraper import Skyscraper
 
+ACTION_ENCODING = [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1, 2], [0, 2, 0],
+                   [0, 2, 1], [0, 2, 2], [1, 0, 0], [1, 0, 1], [1, 0, 2], [1, 1, 0], [1, 1, 1],
+                   [1, 1, 2], [1, 2, 0], [1, 2, 1], [1, 2, 2], [2, 0, 0], [2, 0, 1], [2, 0, 2], [2, 1, 0],
+                   [2, 1, 1], [2, 1, 2], [2, 2, 0], [2, 2, 1], [2, 2, 2]]
+
 
 class A2C:
     def __init__(self, env, network):
@@ -18,13 +23,16 @@ class A2C:
         self.total_policy_loss = []
         self.total_loss = []
 
-    def generate_episode(self):
+    def generate_episode(self, isTrain=True):
         states, actions, rewards, dones, next_states = [], [], [], [], []
         counter = 0
         done = False
+        if not isTrain:
+            self.s_0 = self.s_0, _, _ = self.env.get_state()
+            self.reward = 0
         while not done:
             action = self.network.get_next_action(self.s_0)
-            self.env.schedule_action(action)
+            self.env.schedule_action(ACTION_ENCODING[action])
             s_1, r, done = self.env.step()
             self.reward += r
             states.append(self.s_0)
@@ -36,10 +44,11 @@ class A2C:
 
             if done:
                 self.ep_rewards.append(self.reward)
-                self.env = Skyscraper()
                 self.s_0, _, _ = self.env.get_state()
                 self.reward = 0
-                self.ep_counter += 1
+                if isTrain:
+                    self.env = Skyscraper()
+                    self.ep_counter += 1
             counter += 1
         return states, actions, rewards, dones, next_states
 
@@ -78,8 +87,8 @@ class A2C:
         td_delta = G - state_values
         return G, td_delta
 
-    def train(self, n_steps=5, batch_size=10, num_episodes=2000,
-              gamma=0.99, beta=1e-3, zeta=0.5):
+    def train(self, n_steps=5, batch_size=10, num_episodes=5000,
+              gamma=0.99, beta=1e-3, zeta=1e-3):
         self.n_steps = n_steps
         self.gamma = gamma
         self.num_episodes = num_episodes
@@ -104,7 +113,7 @@ class A2C:
 
             if self.ep_counter % 20 == 0:
                 filepath = f'ep_{self.ep_counter}'
-                torch.save(self.network, f'models/one_elevator_test/{filepath}_{self.ep_rewards:.2f}.pt')
+                torch.save(self.network, f'models/one_elevator_test/{filepath}_{self.ep_rewards[-1]:.2f}.pt')
                 self.save_metrics(f'{filepath}.json')
                 print("Saved Model and Metrics")
 
@@ -118,9 +127,8 @@ class A2C:
             "total_loss": self.total_loss
         }
         json_object = json.dumps(metrics, indent=4)
-        with open(filepath, "w") as outfile:
+        with open(f'models/one_elevator_test/metrics/{filepath}', "w") as outfile:
             outfile.write(json_object)
-
 
     def calc_loss(self, states, actions, rewards, advantages, beta=0.001):
         actions_t = torch.LongTensor(actions).to(self.network.device)
@@ -137,9 +145,9 @@ class A2C:
         value_loss = self.zeta * torch.nn.MSELoss()(values.squeeze(-1), rewards_t)
 
         # Append values
-        self.policy_loss.append(policy_loss)
-        self.value_loss.append(value_loss)
-        self.entropy_loss.append(entropy_loss)
+        self.policy_loss.append(policy_loss.item())
+        self.value_loss.append(value_loss.item())
+        self.entropy_loss.append(entropy_loss.item())
 
         return policy_loss, entropy_loss, value_loss
 
@@ -148,16 +156,24 @@ class A2C:
         policy_loss, entropy_loss, value_loss = self.calc_loss(states, actions, rewards, advantages)
 
         total_policy_loss = policy_loss - entropy_loss
-        self.total_policy_loss.append(total_policy_loss)
+        self.total_policy_loss.append(total_policy_loss.item())
         total_policy_loss.backward(retain_graph=True)
 
         value_loss.backward()
 
         total_loss = policy_loss + value_loss + entropy_loss
-        self.total_loss.append(total_loss)
+        self.total_loss.append(total_loss.item())
         self.network.optimizer.step()
 
-
-net = A2CNetwork(device="cpu")
+"""T
+net = A2CNetwork()
 a2c = A2C(Skyscraper(), net)
-a2c.train(n_steps=50, num_episodes=2000, beta=1e-3, zeta=1e-3)
+a2c.train(n_steps=50, num_episodes=10000, beta=0.1, zeta=1e-3)
+"""
+
+"""Test"""
+net = torch.load("models/one_elevator_test/ep_1500_39.58.pt")
+sky = Skyscraper()
+a2c = A2C(sky, net)
+states, actions, rewards, dones, next_states = a2c.generate_episode(isTrain=False)
+print(actions)

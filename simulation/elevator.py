@@ -41,13 +41,15 @@ class Elevator:
 def calc_accept_reward(start_time, end_time):
     time_diff = end_time - start_time
     # return (2/(0.08+np.exp((1/5)*time_diff-5.9))) - 12.5
-    return (2/(0.2+np.exp((1/5)*time_diff-3.5))) / 3
+    # return (2/(0.2+np.exp((1/5)*time_diff-3.5))) / 3
+    return 1 / (time_diff + 1)
 
 
 def calc_release_reward(start_time, end_time):
     time_diff = end_time - start_time
     # return (2/(0.11+np.exp((1/3)*time_diff-6))) - 6
-    return (2 / (0.2 + np.exp((1 / 5) * time_diff - 3.5))) / 3
+    # return (2 / (0.2 + np.exp((1 / 5) * time_diff - 3.5))) / 3
+    return 1 / (time_diff+1)
 
 
 class ElevatorController:
@@ -175,13 +177,13 @@ class ElevatorController:
     def up(self, elevator_instance):
         if elevator_instance.current_floor != config.NUM_OF_FLOORS - 1:
             elevator_instance.current_floor += 1
-            # self.skyscraper.step_reward += 1
+            # self.skyscraper.step_reward -= 0.01
         yield self.__environment.timeout(1)
 
     def down(self, elevator_instance):
         if elevator_instance.current_floor != 0:
             elevator_instance.current_floor -= 1
-            # self.skyscraper.step_reward += 1
+            # self.skyscraper.step_reward -= 0.01
         yield self.__environment.timeout(1)
 
     def __accept_passenger_and_update_elevator_state(self, elevator_instance):
@@ -242,5 +244,4 @@ class ElevatorController:
         hasReleased = self.__environment.process(self.__release_passenger_and_update_elevator_state(elevator_instance))
         hasAccepted = self.__environment.process(self.__accept_passenger_and_update_elevator_state(elevator_instance))
 
-        if hasAccepted or hasReleased:
-            yield self.__environment.timeout(1)
+        yield self.__environment.timeout(1)

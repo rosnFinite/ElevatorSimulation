@@ -5,42 +5,42 @@ import numpy as np
 
 
 class A2CNetwork(nn.Module):
-    def __init__(self, input_size=46, action_size=3, learning_rate=0.01, device="cpu"):
+    def __init__(self, input_size=82, action_size=27, learning_rate=0.01):
         super(A2CNetwork, self).__init__()
-        self.device = device
+        self.action_size = action_size
+        self.device = torch.device("cpu")
         self.learning_rate = learning_rate
 
         self.shared_net = nn.Sequential(
-            nn.Linear(input_size, 64),
+            nn.Linear(input_size, 128),
             nn.ReLU(),
-            nn.Linear(64, 128),
+            nn.Linear(128, 256),
             nn.ReLU()
         )
 
         self.actor_net = nn.Sequential(
-            nn.Linear(128, 128),
+            nn.Linear(256, 128),
             nn.ReLU(),
-            nn.Linear(128, 3)
+            nn.Linear(128, action_size)
         )
 
         self.critic_net = nn.Sequential(
-            nn.Linear(128, 128),
+            nn.Linear(256, 128),
             nn.ReLU(),
             nn.Linear(128, 1)
         )
 
-        torch.device(device)
-
         self.optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
     def predict(self, state):
-        shared_out = self.shared_net(torch.FloatTensor(state).to(device=self.device))
+        state_tensor = torch.FloatTensor(state).to(device=self.device)
+        shared_out = self.shared_net(state_tensor)
         probs = F.softmax(self.actor_net(shared_out), dim=-1)
         return probs, self.critic_net(shared_out)
 
     def get_next_action(self, state):
         probs = self.predict(state)[0].detach().numpy()
-        action = np.random.choice([0, 1, 2], p=probs)
+        action = np.random.choice([x for x in range(self.action_size)], p=probs)
         return action
 
     def get_log_probs(self, state):
