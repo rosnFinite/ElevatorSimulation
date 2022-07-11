@@ -28,7 +28,7 @@ class A2C:
         counter = 0
         done = False
         if not isTrain:
-            self.s_0 = self.s_0, _, _ = self.env.get_state()
+            self.s_0, _, _ = self.env.get_state()
             self.reward = 0
         while not done:
             action = self.network.get_next_action(self.s_0)
@@ -113,7 +113,7 @@ class A2C:
 
             if self.ep_counter % 20 == 0:
                 filepath = f'ep_{self.ep_counter}'
-                torch.save(self.network, f'models/one_elevator_test/{filepath}_{self.ep_rewards[-1]:.2f}.pt')
+                torch.save(self.network, f'models/three_elevator/{filepath}_{self.ep_rewards[-1]:.2f}.pt')
                 self.save_metrics(f'{filepath}.json')
                 print("Saved Model and Metrics")
 
@@ -127,7 +127,7 @@ class A2C:
             "total_loss": self.total_loss
         }
         json_object = json.dumps(metrics, indent=4)
-        with open(f'models/one_elevator_test/metrics/{filepath}', "w") as outfile:
+        with open(f'models/three_elevator/metrics/{filepath}', "w") as outfile:
             outfile.write(json_object)
 
     def calc_loss(self, states, actions, rewards, advantages, beta=0.001):
@@ -165,15 +165,16 @@ class A2C:
         self.total_loss.append(total_loss.item())
         self.network.optimizer.step()
 
-"""T
+"""T"""
 net = A2CNetwork()
 a2c = A2C(Skyscraper(), net)
-a2c.train(n_steps=50, num_episodes=10000, beta=0.1, zeta=1e-3)
-"""
+a2c.train(n_steps=50, num_episodes=20000, beta=0.1, zeta=1e-3)
 
-"""Test"""
-net = torch.load("models/one_elevator_test/ep_1500_39.58.pt")
+
+"""Test
+net = torch.load("models/three_elevator/ep_4800_6.51.pt")
 sky = Skyscraper()
 a2c = A2C(sky, net)
 states, actions, rewards, dones, next_states = a2c.generate_episode(isTrain=False)
 print(actions)
+"""

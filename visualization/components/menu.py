@@ -36,6 +36,11 @@ EnvironmentParameterMenu = dmc.Paper(
                             label="Random Seed",
                             value=None,
                             style={"width": 250}
+                        ),
+                        dmc.Switch(
+                            id="reinforcement-switch",
+                            label="Reinforcement Agent",
+                            checked=False
                         )
                     ]
                 )

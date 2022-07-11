@@ -234,6 +234,7 @@ class Skyscraper:
 
         if self.environment.now == config.SIMULATION_TIME-1:
             isDone = True
+            self.__create_df_log()
 
         return state, reward, isDone
 

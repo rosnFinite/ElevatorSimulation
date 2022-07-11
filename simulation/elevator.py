@@ -177,13 +177,11 @@ class ElevatorController:
     def up(self, elevator_instance):
         if elevator_instance.current_floor != config.NUM_OF_FLOORS - 1:
             elevator_instance.current_floor += 1
-            # self.skyscraper.step_reward -= 0.01
         yield self.__environment.timeout(1)
 
     def down(self, elevator_instance):
         if elevator_instance.current_floor != 0:
             elevator_instance.current_floor -= 1
-            # self.skyscraper.step_reward -= 0.01
         yield self.__environment.timeout(1)
 
     def __accept_passenger_and_update_elevator_state(self, elevator_instance):
@@ -205,7 +203,7 @@ class ElevatorController:
             else:
                 request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
 
-            self.skyscraper.step_reward += calc_accept_reward(request.request_time, self.__environment.now)
+            # self.skyscraper.step_reward += calc_accept_reward(request.request_time, self.__environment.now)
             request.accept_usage_request(elevator_instance.id)
             elevator_instance.num_of_passengers += 1
 

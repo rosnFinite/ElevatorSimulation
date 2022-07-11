@@ -14,6 +14,7 @@ from components.menu import EnvironmentParameterMenu, PassengerBehaviourMenu
 from components.visuals import PassengerSpawnratePlot, TimeLine
 from components.statistics import Statistics
 from simulation.skyscraper import Skyscraper
+from reinforcement.a2c import run_inference
 
 
 # this is a pointer to the module object instance itself.
@@ -135,12 +136,13 @@ def update_total_sim_steps(seconds_per_step):
     ],
     [
         State(component_id="input-second-per-step", component_property="value"),
-        State(component_id="input-random-seed", component_property="value")
+        State(component_id="input-random-seed", component_property="value"),
+        State(component_id="reinforcement-switch", component_property="checked")
     ],
     Input("simulation-button", "n_clicks"),
     prevent_initial_call=True
 )
-def get_simulation_data(seconds_per_step, random_seed, n_clicks):
+def get_simulation_data(seconds_per_step, random_seed, reinforcement, n_clicks):
     """
     Runs the simulation with the user defined configuration and updates all statistics afterwards
 
@@ -152,17 +154,29 @@ def get_simulation_data(seconds_per_step, random_seed, n_clicks):
         this.skyscraper = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
     else:
         this.skyscraper = Skyscraper(passenger_behaviour=this.passenger_behaviour)
-    this.skyscraper.run_simulation(time=int(1440 * (60 / seconds_per_step)))
+    if reinforcement:
+        run_inference(save_filepath="../reinforcement/models/three_elevator/checkpoint_330.pt",
+                      environment=this.skyscraper)
+    else:
+        this.skyscraper.run_simulation(until_time=int(1440 * (60 / seconds_per_step)))
     total_spawned = f'#Passengers created: {this.skyscraper.num_generated_passengers}'
     total_transported = f'#Passengers transported: {this.skyscraper.num_transported_passengers}'
     total_abandoned = f'#Passengers abandoned: {this.skyscraper.num_generated_passengers - this.skyscraper.num_transported_passengers}'
     percentage_transported = f'Quota: {this.skyscraper.num_transported_passengers / this.skyscraper.num_generated_passengers * 100:.2f}%'
-    mean_queue_time = f'Mean: {datetime.timedelta(seconds=this.skyscraper.mean_queue_time)}'
-    median_queue_time = f'Median: {datetime.timedelta(seconds=this.skyscraper.median_queue_time)}'
-    std_queue_time = f'Std. Deviation: {datetime.timedelta(seconds=this.skyscraper.std_queue_time)}'
-    mean_elevator_time = f'Mean: {datetime.timedelta(seconds=this.skyscraper.mean_travel_time)}'
-    median_elevator_time = f'Median: {datetime.timedelta(seconds=this.skyscraper.mean_travel_time)}'
-    std_elevator_time = f'Std. Deviation: {datetime.timedelta(seconds=this.skyscraper.std_travel_time)}'
+    try:
+        mean_queue_time = f'Mean: {datetime.timedelta(seconds=this.skyscraper.mean_queue_time)}'
+        median_queue_time = f'Median: {datetime.timedelta(seconds=this.skyscraper.median_queue_time)}'
+        std_queue_time = f'Std. Deviation: {datetime.timedelta(seconds=this.skyscraper.std_queue_time)}'
+        mean_elevator_time = f'Mean: {datetime.timedelta(seconds=this.skyscraper.mean_travel_time)}'
+        median_elevator_time = f'Median: {datetime.timedelta(seconds=this.skyscraper.mean_travel_time)}'
+        std_elevator_time = f'Std. Deviation: {datetime.timedelta(seconds=this.skyscraper.std_travel_time)}'
+    except ValueError:
+        mean_queue_time = f'Mean: --NO PASSENGER TRANSPORTED--'
+        median_queue_time = f'Median: --NO PASSENGER TRANSPORTED--'
+        std_queue_time = f'Std. Deviation: --NO PASSENGER TRANSPORTED--'
+        mean_elevator_time = f'Mean: --NO PASSENGER TRANSPORTED--'
+        median_elevator_time = f'Median: --NO PASSENGER TRANSPORTED--'
+        std_elevator_time = f'Std. Deviation: --NO PASSENGER TRANSPORTED--'
     fig_up = plotting.plot_waiting(this.skyscraper, "up")
     fig_down = plotting.plot_waiting(this.skyscraper, "down")
     dist_q = plotting.plot_distribution(this.skyscraper.queue_time_log, title="Queue time distribution")
