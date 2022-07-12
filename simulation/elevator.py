@@ -1,5 +1,4 @@
 import random
-import numpy as np
 
 from simpy import Environment, Store
 
@@ -42,14 +41,14 @@ def calc_accept_reward(start_time, end_time):
     time_diff = end_time - start_time
     # return (2/(0.08+np.exp((1/5)*time_diff-5.9))) - 12.5
     # return (2/(0.2+np.exp((1/5)*time_diff-3.5))) / 3
-    return 1 / (time_diff + 1)
+    return 5 / (time_diff + 1)
 
 
 def calc_release_reward(start_time, end_time):
     time_diff = end_time - start_time
     # return (2/(0.11+np.exp((1/3)*time_diff-6))) - 6
     # return (2 / (0.2 + np.exp((1 / 5) * time_diff - 3.5))) / 3
-    return 1 / (time_diff+1)
+    return 5 / (time_diff + 1)
 
 
 class ElevatorController:

@@ -155,7 +155,7 @@ def get_simulation_data(seconds_per_step, random_seed, reinforcement, n_clicks):
     else:
         this.skyscraper = Skyscraper(passenger_behaviour=this.passenger_behaviour)
     if reinforcement:
-        run_inference(save_filepath="../reinforcement/models/three_elevator/checkpoint_330.pt",
+        run_inference(save_filepath="../reinforcement/models/checkpoint_3680_15.1.pt",
                       environment=this.skyscraper)
     else:
         this.skyscraper.run_simulation(until_time=int(1440 * (60 / seconds_per_step)))
