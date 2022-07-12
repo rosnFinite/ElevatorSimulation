@@ -1,13 +1,15 @@
 import datetime
 import json
 import time
-
+import wandb
 import torch.nn.functional as F
 import torch.optim
 import numpy as np
 from reinforcement.network import A2CNetwork
 from skyscraper import Skyscraper
 
+
+wandb.init(project="skyscraper")
 torch.set_num_threads(10)
 
 ACTION_ENCODING = [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1, 2], [0, 2, 0],
@@ -16,9 +18,11 @@ ACTION_ENCODING = [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1,
                    [2, 1, 1], [2, 1, 2], [2, 2, 0], [2, 2, 1], [2, 2, 2]]
 
 
-def run_train(num_episodes, log_file, gamma=0.99, ):
+def run_train(num_episodes, gamma=0.99, ):
     print("Start Training")
     a2c_net = A2CNetwork()
+    policy_optimizer = torch.optim.Adam(a2c_net.actor_net.parameters(), lr=0.001)
+    value_optimizer = torch.optim.Adam(a2c_net.critic_net.parameters(), lr=0.001)
 
     rewards_log = []
     policy_log = []
@@ -33,17 +37,16 @@ def run_train(num_episodes, log_file, gamma=0.99, ):
         episode_values = []
         episode_log_probs = []
         episode_actions = []
+        episode_dones = []
 
         environment = Skyscraper()
         state, _, done = environment.get_state()
         start_time_episode = time.perf_counter()
         while not done:
             value, policy_dist = a2c_net.forward(state)
-            value = value.detach().numpy()
-            dist = policy_dist.detach().numpy()
 
-            action = np.random.choice(len(ACTION_ENCODING), p=np.squeeze(dist))
-            log_prob = torch.log(policy_dist.squeeze(0)[action])
+            action = policy_dist.sample()
+            log_prob = policy_dist.log_prob(action).unsqueeze(0)
 
             environment.schedule_action(ACTION_ENCODING[action])
             state_1, reward, done = environment.step()
@@ -53,33 +56,36 @@ def run_train(num_episodes, log_file, gamma=0.99, ):
             episode_values.append(value)
             episode_log_probs.append(log_prob)
             episode_actions.append(action)
+            episode_dones.append(done)
 
             if done:
                 rewards_log.append(np.sum(episode_rewards))
-                Qval, _ = a2c_net.forward(state_1)
-                Qval = Qval.cpu().detach().numpy()
 
         end_time_episode = time.perf_counter()
 
-        Qvals = np.zeros_like(episode_values)
+        Qval, _ = a2c_net.forward(state_1)
+        Qvals = []
         for t in reversed(range(len(episode_rewards))):
-            Qval = episode_rewards[t] + gamma * Qval
-            Qvals[t] = Qval
+            Qval = episode_rewards[t] + gamma * Qval * episode_dones[t]
+            Qvals.insert(0,Qval)
 
-        values = torch.FloatTensor(np.array(episode_values))
-        rewards = torch.FloatTensor(np.array(episode_rewards))
-        Qvals = torch.FloatTensor(Qvals)
+        values = torch.cat(episode_values)
+        Qvals = torch.cat(Qvals).detach()
         log_probs = torch.stack(episode_log_probs)
 
         advantage = Qvals - values
-        actor_loss = (-log_probs * advantage).mean()
-        critic_loss = F.mse_loss(rewards, torch.squeeze(values))
+        actor_loss = (-log_probs * advantage.detach()).mean()
+        critic_loss = advantage.pow(2).mean()
         total_loss = actor_loss + critic_loss
 
         start_time_optim = time.perf_counter()
-        a2c_net.optimizer.zero_grad(set_to_none=True)
-        total_loss.backward()
-        a2c_net.optimizer.step()
+        policy_optimizer.zero_grad(set_to_none=True)
+        actor_loss.backward()
+        policy_optimizer.step()
+
+        value_optimizer.zero_grad(set_to_none=True)
+        critic_loss.backward()
+        value_optimizer.step()
         end_time_optim = time.perf_counter()
 
         # save model
@@ -87,27 +93,16 @@ def run_train(num_episodes, log_file, gamma=0.99, ):
             state = {
                 "episode": episode,
                 "state_dict": a2c_net.state_dict(),
-                "optimizer": a2c_net.optimizer.state_dict()
+                "actor_optimizer": policy_optimizer.state_dict(),
+                "critic_optimizer": value_optimizer.state_dict()
             }
             torch.save(state, f'models/checkpoint_{episode}_{rewards_log[-1]:.1f}.pt')
 
-            # log metrics
-            policy_log.append(actor_loss.item())
-            value_log.append(critic_loss.item())
-            num_transported_log.append(environment.num_transported_passengers)
-            num_created_log.append(environment.num_generated_passengers)
-            avg_q_time.append(environment.mean_queue_time)
-            avg_t_time.append(environment.mean_travel_time)
-            metrics = {
-                "rewards": rewards_log,
-                "policy_log": policy_log,
-                "value_log": value_log,
-                "num_transported": num_transported_log,
-                "num_created": num_created_log,
-                "avg_q_time": avg_q_time,
-                "avg_t_time": avg_t_time
-            }
-            save_metrics(log_file, metrics)
+        wandb.log({"total_loss": total_loss.item(),
+                   "policy loss": actor_loss.item(),
+                   "value loss": critic_loss.item(),
+                   "reward": rewards_log[-1],
+                   "num_transported": environment.num_transported_passengers})
 
         mean_q = -1
         mean_t = -1
@@ -205,6 +200,5 @@ def run_inference(save_filepath, environment):
         state_1, reward, done = environment.step()
         state = state_1
 
-
 if __name__ == "__main__":
-    run_train(num_episodes=15000, log_file="daily.json")
+    run_train(num_episodes=15000)

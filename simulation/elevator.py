@@ -222,7 +222,7 @@ class ElevatorController:
                 request = yield elevator_instance.passenger_requests_store.get()
                 # release passenger if he is on his desired floor
                 if request.destination_floor == elevator_instance.current_floor:
-                    self.skyscraper.step_reward += calc_release_reward(request.request_time, self.__environment.now)
+                    self.skyscraper.step_reward += 1  #calc_release_reward(request.request_time, self.__environment.now)
                     request.reached_floor()
                     elevator_instance.num_of_passengers -= 1
                     elevator_instance.passenger_requests[elevator_instance.current_floor] -= 1

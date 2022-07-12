@@ -4,7 +4,7 @@ from simpy import Environment
 # import for intern files
 from simulation import config
 from simulation.util import print_verbose, print_silent
-from simulation.requests import UsageRequest, FloorRequest
+from simulation.passenger_requests import UsageRequest, FloorRequest
 
 
 def generate_random_start_and_destination() -> np.ndarray:
