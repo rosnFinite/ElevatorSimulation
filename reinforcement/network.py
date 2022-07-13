@@ -8,29 +8,31 @@ class A2CNetwork(nn.Module):
         super(A2CNetwork, self).__init__()
         self.action_size = action_size
         self.input_size = input_size
-        self.learning_rate = learning_rate
 
-        self.actor_net = nn.Sequential(
+        self.shared_net = nn.Sequential(
             nn.Linear(input_size, 128),
             nn.ReLU(),
             nn.Linear(128, 128),
+            nn.ReLU()
+        )
+
+        self.actor_net = nn.Sequential(
+            nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(128, action_size)
+            nn.Linear(64, action_size)
         )
 
         self.critic_net = nn.Sequential(
-            nn.Linear(input_size, 128),
+            nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1)
+            nn.Linear(64, 1)
         )
 
     def forward(self, state):
         state_tensor = torch.FloatTensor(state)
-        # shared_out = self.shared_net(state_tensor)
-        value = self.critic_net(state_tensor)
+        shared_out = self.shared_net(state_tensor)
+        value = self.critic_net(shared_out)
 
-        policy_dist = torch.distributions.Categorical(F.softmax(self.actor_net(state_tensor), dim=-1))
+        policy_dist = torch.distributions.Categorical(F.softmax(self.actor_net(shared_out), dim=-1))
 
         return value, policy_dist

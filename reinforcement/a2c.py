@@ -21,8 +21,7 @@ ACTION_ENCODING = [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1,
 def run_train(num_episodes, gamma=0.99, ):
     print("Start Training")
     a2c_net = A2CNetwork()
-    policy_optimizer = torch.optim.Adam(a2c_net.actor_net.parameters(), lr=0.001)
-    value_optimizer = torch.optim.Adam(a2c_net.critic_net.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(a2c_net.actor_net.parameters(), lr=0.0005)
 
     rewards_log = []
     policy_log = []
@@ -79,13 +78,9 @@ def run_train(num_episodes, gamma=0.99, ):
         total_loss = actor_loss + critic_loss
 
         start_time_optim = time.perf_counter()
-        policy_optimizer.zero_grad(set_to_none=True)
-        actor_loss.backward()
-        policy_optimizer.step()
-
-        value_optimizer.zero_grad(set_to_none=True)
-        critic_loss.backward()
-        value_optimizer.step()
+        optimizer.zero_grad(set_to_none=True)
+        total_loss.backward()
+        optimizer.step()
         end_time_optim = time.perf_counter()
 
         # save model
@@ -93,8 +88,7 @@ def run_train(num_episodes, gamma=0.99, ):
             state = {
                 "episode": episode,
                 "state_dict": a2c_net.state_dict(),
-                "actor_optimizer": policy_optimizer.state_dict(),
-                "critic_optimizer": value_optimizer.state_dict()
+                "optimizer": optimizer.state_dict()
             }
             torch.save(state, f'models/checkpoint_{episode}_{rewards_log[-1]:.1f}.pt')
 

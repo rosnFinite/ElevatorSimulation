@@ -41,14 +41,16 @@ def calc_accept_reward(start_time, end_time):
     time_diff = end_time - start_time
     # return (2/(0.08+np.exp((1/5)*time_diff-5.9))) - 12.5
     # return (2/(0.2+np.exp((1/5)*time_diff-3.5))) / 3
-    return 5 / (time_diff + 1)
+    # return 1 / (time_diff + 1)
+    return 0.2
 
 
 def calc_release_reward(start_time, end_time):
     time_diff = end_time - start_time
-    # return (2/(0.11+np.exp((1/3)*time_diff-6))) - 6
+    # return (2/(0.11+np.exp((1/3)*time_diff-6 ))) - 6
     # return (2 / (0.2 + np.exp((1 / 5) * time_diff - 3.5))) / 3
-    return 5 / (time_diff + 1)
+    # return 1 / (time_diff + 1)
+    return 1
 
 
 class ElevatorController:
@@ -202,7 +204,7 @@ class ElevatorController:
             else:
                 request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
 
-            # self.skyscraper.step_reward += calc_accept_reward(request.request_time, self.__environment.now)
+            self.skyscraper.step_reward += calc_accept_reward(request.request_time, self.__environment.now)
             request.accept_usage_request(elevator_instance.id)
             elevator_instance.num_of_passengers += 1
 
@@ -222,7 +224,7 @@ class ElevatorController:
                 request = yield elevator_instance.passenger_requests_store.get()
                 # release passenger if he is on his desired floor
                 if request.destination_floor == elevator_instance.current_floor:
-                    self.skyscraper.step_reward += 1  #calc_release_reward(request.request_time, self.__environment.now)
+                    self.skyscraper.step_reward += calc_release_reward(request.request_time, self.__environment.now)
                     request.reached_floor()
                     elevator_instance.num_of_passengers -= 1
                     elevator_instance.passenger_requests[elevator_instance.current_floor] -= 1

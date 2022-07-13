@@ -78,7 +78,7 @@ class Passenger:
         # Request the elevator to stop at your destination
         start_time_transportation = self.__environment.now
         floor_flag = self.__environment.event()
-        floor_request = FloorRequest(floor_flag, self.destination_floor, start_time_total)
+        floor_request = FloorRequest(floor_flag, self.destination_floor, start_time_transportation)
         yield self.skyscraper.elevator_list[elevator_id].passenger_requests_store.put(floor_request)
         self.skyscraper.elevator_list[elevator_id].passenger_requests[self.destination_floor] += 1
         yield floor_flag
