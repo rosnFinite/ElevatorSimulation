@@ -150,14 +150,11 @@ def get_simulation_data(seconds_per_step, random_seed, reinforcement, n_clicks):
     :param int random_seed:
     :param int n_clicks:
     """
-    if random_seed is not None:
-        this.skyscraper = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
-    else:
-        this.skyscraper = Skyscraper(passenger_behaviour=this.passenger_behaviour)
     if reinforcement:
-        run_inference(save_filepath="../reinforcement/models/checkpoint_3680_15.1.pt",
-                      environment=this.skyscraper)
+        this.skyscraper = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour)
+        run_inference("../reinforcement/models/checkpoint_4590_811.6.pt", this.skyscraper)
     else:
+        this.skyscraper = Skyscraper(random_seed, passenger_behaviour=this.passenger_behaviour, is_scanning=True)
         this.skyscraper.run_simulation(until_time=int(1440 * (60 / seconds_per_step)))
     total_spawned = f'#Passengers created: {this.skyscraper.num_generated_passengers}'
     total_transported = f'#Passengers transported: {this.skyscraper.num_transported_passengers}'

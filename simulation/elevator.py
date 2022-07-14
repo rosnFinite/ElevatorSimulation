@@ -6,10 +6,13 @@ from simpy import Environment, Store
 from simulation.util import print_verbose, print_silent
 from simulation import config
 
+REWARD_ACCEPT = 0.2
+REWARD_RELEASE = 1
 
 class Elevator:
     def __init__(self, elevator_id: int,
                  environment: Environment,
+                 is_scanning,
                  controller,
                  starting_floor: int):
         self.id = elevator_id
@@ -27,7 +30,8 @@ class Elevator:
         self.debug_log = print_silent
         if config.VERBOSE:
             self.debug_log = print_verbose
-        # self.__environment.process(self.__transport())
+        if is_scanning:
+            self.__environment.process(self.__transport())
 
     def __transport(self):
         while True:
@@ -35,22 +39,6 @@ class Elevator:
             yield self.__environment.process(self.__controller.accept_passengers(self))
             yield self.__environment.process(self.__controller.next_floor(self))
             self.debug_log("----------------------------------")
-
-
-def calc_accept_reward(start_time, end_time):
-    time_diff = end_time - start_time
-    # return (2/(0.08+np.exp((1/5)*time_diff-5.9))) - 12.5
-    # return (2/(0.2+np.exp((1/5)*time_diff-3.5))) / 3
-    # return 1 / (time_diff + 1)
-    return 0.2
-
-
-def calc_release_reward(start_time, end_time):
-    time_diff = end_time - start_time
-    # return (2/(0.11+np.exp((1/3)*time_diff-6 ))) - 6
-    # return (2 / (0.2 + np.exp((1 / 5) * time_diff - 3.5))) / 3
-    # return 1 / (time_diff + 1)
-    return 1
 
 
 class ElevatorController:
@@ -204,7 +192,7 @@ class ElevatorController:
             else:
                 request = yield self.skyscraper.floor_list[elevator_instance.current_floor].queue_down.get()
 
-            self.skyscraper.step_reward += calc_accept_reward(request.request_time, self.__environment.now)
+            self.skyscraper.step_reward += REWARD_ACCEPT
             request.accept_usage_request(elevator_instance.id)
             elevator_instance.num_of_passengers += 1
 
@@ -224,7 +212,7 @@ class ElevatorController:
                 request = yield elevator_instance.passenger_requests_store.get()
                 # release passenger if he is on his desired floor
                 if request.destination_floor == elevator_instance.current_floor:
-                    self.skyscraper.step_reward += calc_release_reward(request.request_time, self.__environment.now)
+                    self.skyscraper.step_reward += REWARD_RELEASE
                     request.reached_floor()
                     elevator_instance.num_of_passengers -= 1
                     elevator_instance.passenger_requests[elevator_instance.current_floor] -= 1

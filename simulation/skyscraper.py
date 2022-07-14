@@ -13,20 +13,16 @@ from simulation.passenger import Passenger
 from simulation.floor import Floor
 from simulation.elevator import Elevator, ElevatorController
 
-class Action(enum.Enum):
-    UP = 0
-    DOWN = 1
-    HOLD = 2
-
 
 class Skyscraper:
-    def __init__(self, random_seed: int = None, passenger_behaviour: dict = None):
+    def __init__(self, random_seed: int = None, passenger_behaviour: dict = None, is_scanning=False):
         self.environment = simpy.Environment()
         self.environment.process(self.__passenger_spawner())
         self.environment.process(self.__observer())
         self.num_of_floors = config.NUM_OF_FLOORS
         self.num_of_elevators = config.NUM_OF_ELEVATORS
         self.step_reward = 0
+        self.is_scanning = False
         # --------------------------Simulation logs--------------------------
         self.num_passengers = 0
         self.elevator_position_log = [[] for _ in range(config.NUM_OF_ELEVATORS)]
@@ -56,6 +52,7 @@ class Skyscraper:
         self.elevator_controller = ElevatorController(self.environment, self)
         self.elevator_list = [Elevator(x, self.environment,
                                        starting_floor=x * 7,
+                                       is_scanning=is_scanning,
                                        controller=self.elevator_controller)
                               for x in range(self.num_of_elevators)]
 
@@ -198,6 +195,9 @@ class Skyscraper:
         self.__create_df_log()
 
     def schedule_action(self, action_list):
+        """
+        Start processes responsible for performing Agents action.
+        """
         for index, a in enumerate(action_list):
             if a == 0:
                 self.environment.process(self.elevator_controller.up(self.elevator_list[index]))
@@ -240,6 +240,7 @@ class Skyscraper:
 
         if self.environment.now == config.SIMULATION_TIME-1:
             isDone = True
+            # create final dataframe for dash visualization
             self.__create_df_log()
 
         return state, reward, isDone

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class A2CNetwork(nn.Module):
-    def __init__(self, input_size=82, action_size=27, learning_rate=0.001):
+    def __init__(self, input_size=82, action_size=27):
         super(A2CNetwork, self).__init__()
         self.action_size = action_size
         self.input_size = input_size
