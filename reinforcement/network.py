@@ -28,10 +28,14 @@ class A2CNetwork(nn.Module):
             nn.Linear(1024, 1)
         )
 
+        self.shared_net.cuda()
+        self.actor_net.cuda()
+        self.critic_net.cuda()
+
     def forward(self, state):
-        state_tensor = torch.tensor(state)
-        shared_out = self.shared_net(state_tensor)
-        value = self.critic_net(shared_out)
+        state_tensor = torch.tensor(state, dtype=torch.float32).cuda()
+        shared_out = self.shared_net(state_tensor).cuda()
+        value = self.critic_net(shared_out).cuda()
 
         policy_dist = torch.distributions.Categorical(F.softmax(self.actor_net(shared_out), dim=-1))
 

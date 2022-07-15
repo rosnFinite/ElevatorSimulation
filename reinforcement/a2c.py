@@ -32,21 +32,29 @@ def run_train(num_episodes, gamma=0.1 ):
         environment = Skyscraper()
         state, _, done = environment.get_state()
         start_time_episode = time.perf_counter()
+
+        counter = 0
         while not done:
+            print(counter)
+            start = time.perf_counter()
             value, policy_dist = a2c_net.forward(state)
+            print(f"inference time: {time.perf_counter()-start}")
 
             action = policy_dist.sample()
             log_prob = policy_dist.log_prob(action).unsqueeze(0)
 
+            start = time.perf_counter()
             environment.schedule_action(ACTION_ENCODING[action])
             state_1, reward, done = environment.step()
             state = state_1
+            print(f"simulation time: {time.perf_counter() - start}")
 
             episode_rewards.append(reward)
             episode_values.append(value)
             episode_log_probs.append(log_prob)
             episode_actions.append(action)
             episode_dones.append(done)
+            counter += 1
 
             if done:
                 rewards_log.append(np.sum(episode_rewards))
@@ -60,12 +68,12 @@ def run_train(num_episodes, gamma=0.1 ):
             Qvals.insert(0,Qval)
 
         values = torch.cat(episode_values)
-        Qvals = torch.tensor(Qvals).detach()
-        log_probs = torch.stack(episode_log_probs)
+        Qvals = torch.tensor(Qvals).detach().cuda()
+        log_probs = torch.stack(episode_log_probs).cuda()
 
         advantage = Qvals - values
-        actor_loss = (-log_probs * advantage.detach()).mean()
-        critic_loss = advantage.pow(2).mean()
+        actor_loss = (-log_probs * advantage.detach()).mean().cuda()
+        critic_loss = advantage.pow(2).mean().cuda()
         total_loss = actor_loss + critic_loss
 
         start_time_optim = time.perf_counter()
