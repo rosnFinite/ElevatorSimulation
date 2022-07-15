@@ -15,7 +15,7 @@ ACTION_ENCODING = [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1,
                    [2, 1, 1], [2, 1, 2], [2, 2, 0], [2, 2, 1], [2, 2, 2]]
 
 
-def run_train(num_episodes, gamma=0.99, ):
+def run_train(num_episodes, gamma=0.1 ):
     print("Start Training")
     a2c_net = A2CNetwork()
     optimizer = torch.optim.Adam(a2c_net.actor_net.parameters(), lr=0.01)

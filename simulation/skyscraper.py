@@ -220,9 +220,9 @@ class Skyscraper:
         f_waiting_up = [floor.num_waiting_up/max_up for floor in self.floor_list]  # 15
         f_waiting_down = [floor.num_waiting_down/max_down for floor in self.floor_list]  # 15
 
-        e0_pos = self.elevator_list[0].current_floor / (config.NUM_OF_FLOORS-1)  # 1
-        e1_pos = self.elevator_list[1].current_floor / (config.NUM_OF_FLOORS-1)  # 1
-        e2_pos = self.elevator_list[2].current_floor / (config.NUM_OF_FLOORS-1)  # 1
+        e0_pos = [0 if x != self.elevator_list[0].current_floor else 1 for x in range(config.NUM_OF_FLOORS)]  # 15
+        e1_pos = [0 if x != self.elevator_list[1].current_floor else 1 for x in range(config.NUM_OF_FLOORS)]  # 15
+        e2_pos = [0 if x != self.elevator_list[2].current_floor else 1 for x in range(config.NUM_OF_FLOORS)]  # 15
 
         e0_util = self.elevator_list[0].num_of_passengers / config.ELEVATOR_PAYLOAD  # 1
         e1_util = self.elevator_list[1].num_of_passengers / config.ELEVATOR_PAYLOAD  # 1
@@ -232,7 +232,7 @@ class Skyscraper:
         e1_destinations = [x/(config.NUM_OF_FLOORS-1) for x in self.elevator_list[1].passenger_requests]
         e2_destinations = [x/(config.NUM_OF_FLOORS-1) for x in self.elevator_list[2].passenger_requests]
         sim_time = self.environment.now / (config.SIMULATION_TIME-1)
-        state = ([sim_time] + f_waiting_up + f_waiting_down + [e0_pos] + [e1_pos] + [e2_pos] +
+        state = ([sim_time] + f_waiting_up + f_waiting_down + e0_pos + e1_pos + e2_pos +
                  [e0_util] + [e1_util] + [e2_util] + e0_destinations + e1_destinations + e2_destinations)
         reward = self.step_reward
         self.step_reward = 0
@@ -260,6 +260,6 @@ class Skyscraper:
 if __name__ == "__main__":
     sky = Skyscraper(random_seed=12345)
     # time = 8640  // 1 sim step = 10 sec
-    sky.run_simulation(config.SIMULATION_TIME)
-    print(sky.statistics())
+    # sky.run_simulation(config.SIMULATION_TIME)
+    print(sky.step())
 

@@ -7,6 +7,7 @@ dependencies:
   - plotly
   - pandas
   - numpy
+  - wandb
   - pip
   - dash
   - conda-forge::dash-mantine-components
