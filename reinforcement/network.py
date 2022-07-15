@@ -4,32 +4,32 @@ import torch.nn.functional as F
 
 
 class A2CNetwork(nn.Module):
-    def __init__(self, input_size=82, action_size=27):
+    def __init__(self, input_size=124, action_size=27):
         super(A2CNetwork, self).__init__()
         self.action_size = action_size
         self.input_size = input_size
 
         self.shared_net = nn.Sequential(
-            nn.Linear(input_size, 128),
+            nn.Linear(input_size, 1024),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(1024, 2048),
             nn.ReLU()
         )
 
         self.actor_net = nn.Sequential(
-            nn.Linear(128, 64),
+            nn.Linear(2048, 1024),
             nn.ReLU(),
-            nn.Linear(64, action_size)
+            nn.Linear(1024, action_size)
         )
 
         self.critic_net = nn.Sequential(
-            nn.Linear(128, 64),
+            nn.Linear(2048, 1024),
             nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Linear(1024, 1)
         )
 
     def forward(self, state):
-        state_tensor = torch.FloatTensor(state)
+        state_tensor = torch.tensor(state)
         shared_out = self.shared_net(state_tensor)
         value = self.critic_net(shared_out)
 

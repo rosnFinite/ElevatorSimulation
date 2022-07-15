@@ -232,8 +232,8 @@ class Skyscraper:
         e1_destinations = [x/(config.NUM_OF_FLOORS-1) for x in self.elevator_list[1].passenger_requests]
         e2_destinations = [x/(config.NUM_OF_FLOORS-1) for x in self.elevator_list[2].passenger_requests]
         sim_time = self.environment.now / (config.SIMULATION_TIME-1)
-        state = ([sim_time] + f_waiting_up + f_waiting_down + e0_pos + e1_pos + e2_pos +
-                 [e0_util] + [e1_util] + [e2_util] + e0_destinations + e1_destinations + e2_destinations)
+        state = np.array([sim_time] + f_waiting_up + f_waiting_down + e0_pos + e1_pos + e2_pos +
+                         [e0_util] + [e1_util] + [e2_util] + e0_destinations + e1_destinations + e2_destinations)
         reward = self.step_reward
         self.step_reward = 0
         isDone = False
@@ -261,5 +261,5 @@ if __name__ == "__main__":
     sky = Skyscraper(random_seed=12345)
     # time = 8640  // 1 sim step = 10 sec
     # sky.run_simulation(config.SIMULATION_TIME)
-    print(sky.step())
+    print(len(sky.step()[0]))
 
